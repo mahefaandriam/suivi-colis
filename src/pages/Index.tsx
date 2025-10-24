@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { getDeliveryByTrackingNumber } from '@/data/mockData';
 const Index = () => {
   const [trackingNumber, setTrackingNumber] = useState('');
   const navigate = useNavigate();
+  const heroRef = useRef<HTMLElement | null>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,37 +61,54 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 px-4" style={{
-        background: 'linear-gradient(135deg, hsl(262, 83%, 58%) 0%, hsl(262, 70%, 45%) 50%, hsl(280, 80%, 35%) 100%)',
-        backgroundSize: '200% 200%',
-        animation: 'gradient-shift 15s ease infinite'
-      }}>
+      <section
+        ref={heroRef}
+        onMouseMove={(e) => {
+          if (!heroRef.current) return;
+          const rect = heroRef.current.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width - 0.5; // -0.5..0.5
+          const y = (e.clientY - rect.top) / rect.height - 0.5;
+          heroRef.current.style.setProperty('--mx', String(x));
+          heroRef.current.style.setProperty('--my', String(y));
+        }}
+        onMouseLeave={() => {
+          if (!heroRef.current) return;
+          heroRef.current.style.setProperty('--mx', '0');
+          heroRef.current.style.setProperty('--my', '0');
+        }}
+        className="relative overflow-hidden py-20 px-4 hero-styled"
+      >
         {/* Animated Background Blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-10 left-10 w-96 h-96 rounded-full blur-3xl" style={{
-            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.6) 0%, rgba(139, 92, 246, 0) 70%)',
-            animation: 'float 6s ease-in-out infinite'
-          }} />
-          <div className="absolute bottom-10 right-10 w-[500px] h-[500px] rounded-full blur-3xl" style={{
-            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.5) 0%, rgba(168, 85, 247, 0) 70%)',
-            animation: 'float 8s ease-in-out infinite, pulse-glow 4s ease-in-out infinite'
-          }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full blur-3xl" style={{
-            background: 'radial-gradient(circle, rgba(196, 181, 253, 0.4) 0%, rgba(196, 181, 253, 0) 70%)',
-            animation: 'float 7s ease-in-out infinite'
-          }} />
+          <div className="absolute top-10 left-10 blob-wrap wrap-1">
+            <div className="w-96 h-96 rounded-full blur-3xl blob-1" style={{
+              background: 'radial-gradient(circle, rgba(139, 92, 246, 0.6) 0%, rgba(139, 92, 246, 0) 70%)'
+            }} />
+          </div>
+
+          <div className="absolute bottom-10 right-10 blob-wrap wrap-2">
+            <div className="w-[500px] h-[500px] rounded-full blur-3xl blob-2" style={{
+              background: 'radial-gradient(circle, rgba(168, 85, 247, 0.5) 0%, rgba(168, 85, 247, 0) 70%)'
+            }} />
+          </div>
+
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 blob-wrap wrap-3">
+            <div className="w-80 h-80 rounded-full blur-3xl blob-3" style={{
+              background: 'radial-gradient(circle, rgba(196, 181, 253, 0.4) 0%, rgba(196, 181, 253, 0) 70%)'
+            }} />
+          </div>
         </div>
         
         <div className="container mx-auto max-w-4xl text-center relative z-10">
-          <h1 className="mb-4 text-4xl font-bold text-primary-foreground md:text-5xl lg:text-6xl">
-            Suivez vos livraisons en temps réel
+          <h1 className="mb-4 text-4xl font-bold text-primary-foreground md:text-5xl lg:text-6xl hero-title">
+            Trouver votre colis
           </h1>
-          <p className="mb-8 text-lg text-primary-foreground/90 md:text-xl">
-            Entrez votre numéro de suivi pour connaître l'emplacement exact de votre colis
+          <p className="mb-8 text-lg text-primary-foreground/90 md:text-xl hero-subtitle">
+            Entrez votre numéro de suivi pour trouver votre colis
           </p>
 
           <form onSubmit={handleSearch} className="mx-auto max-w-2xl">
-            <Card className="shadow-glow border-primary-glow/20">
+            <Card className="shadow-glow border-primary-glow/20 hero-card">
               <CardContent className="p-6">
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <Input
@@ -100,7 +118,7 @@ const Index = () => {
                     onChange={(e) => setTrackingNumber(e.target.value)}
                     className="flex-1"
                   />
-                  <Button type="submit" variant="hero" size="lg">
+                  <Button type="submit" variant="hero" size="lg" className="hero-cta">
                     <Search className="mr-2 h-5 w-5" />
                     Suivre
                   </Button>

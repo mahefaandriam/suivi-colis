@@ -169,3 +169,114 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Hero styled background: gradient + soft radial blobs + subtle pattern */
+.hero-styled {
+  position: relative;
+  background: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(270 70% 45%) 50%, hsl(290 80% 35%) 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+.hero-styled::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at 10% 20%, rgba(139,92,246,0.35) 0%, rgba(139,92,246,0) 40%),
+              radial-gradient(circle at 90% 80%, rgba(168,85,247,0.25) 0%, rgba(168,85,247,0) 40%);
+  filter: blur(80px);
+  animation: float 9s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-styled::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 12px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ensure content inside the hero sits above decorative layers */
+.hero-styled > .container,
+.hero-styled .relative.z-10 {
+  position: relative;
+  z-index: 10;
+}
+
+/* Parallax variables (updated from JS pointer events) */
+.hero-styled {
+  --mx: 0;
+  --my: 0;
+}
+
+/* Wrapper that receives parallax translations so inner blob animations (float) keep working */
+.blob-wrap {
+  transform: translate(calc(var(--mx) * 18px), calc(var(--my) * 12px));
+  transition: transform 120ms linear;
+  will-change: transform;
+}
+
+.wrap-1 {
+  transform: translate(calc(var(--mx) * 18px), calc(var(--my) * 12px));
+}
+.wrap-2 {
+  transform: translate(calc(var(--mx) * 28px), calc(var(--my) * 16px));
+}
+.wrap-3 {
+  transform: translate(calc(var(--mx) * 10px), calc(var(--my) * 8px));
+}
+
+/* Appearance animations for hero content */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-title {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fade-up 700ms cubic-bezier(.22,.9,.1,1) 200ms forwards;
+}
+
+.hero-subtitle {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fade-up 700ms cubic-bezier(.22,.9,.1,1) 350ms forwards;
+}
+
+.hero-card {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fade-up 700ms cubic-bezier(.22,.9,.1,1) 520ms forwards;
+}
+
+/* Blobs motion controlled via classes so we can fine tune durations */
+.hero-styled .blob-1 {
+  animation: float 6s ease-in-out infinite;
+}
+
+.hero-styled .blob-2 {
+  animation: float 8s ease-in-out infinite, pulse-glow 4s ease-in-out infinite;
+}
+
+.hero-styled .blob-3 {
+  animation: float 7s ease-in-out infinite;
+}
+
+/* CTA micro-interaction */
+.hero-cta {
+  transition: transform 220ms cubic-bezier(.2,.9,.1,1), box-shadow 220ms cubic-bezier(.2,.9,.1,1);
+}
+.hero-cta:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: var(--shadow-glow);
+}
