@@ -2,21 +2,32 @@ import { Package, Truck, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatCard } from '@/components/admin/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockDeliveries, mockStats } from '@/data/mockData';
 import { DeliveryStatusBadge } from '@/components/DeliveryStatusBadge';
 import { useNavigate } from 'react-router-dom';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
+import { useDeliveryStats, useDeliveries } from "@/hooks/useDeliveries"
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const recentDeliveries = mockDeliveries.slice(0, 5);
+  const { data: deliveries, isLoading: deliveriesLoading } = useDeliveries();
+  const { data: stats, isLoading: statsLoading } = useDeliveryStats();
+  
+  if (statsLoading || deliveriesLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-red-500"></div>
+      </div>
+    );
+  }
+
+  const recentDeliveries = deliveries?.slice(0, 5) || [];
 
   const chartData = [
-    { status: 'Livrés', count: mockStats.delivered, fill: 'hsl(262, 83%, 58%)' },
-    { status: 'En transit', count: mockStats.inTransit, fill: 'hsl(262, 70%, 65%)' },
-    { status: 'En attente', count: mockStats.pending, fill: 'hsl(262, 60%, 72%)' },
-    { status: 'Échecs', count: mockStats.failed, fill: 'hsl(262, 50%, 80%)' },
+    { status: 'Livrés', count: stats?.delivered || 0, fill: 'hsl(262, 83%, 58%)' },
+    { status: 'En transit', count: stats?.inTransit || 0, fill: 'hsl(262, 70%, 65%)' },
+    { status: 'En attente', count: stats?.pending || 0, fill: 'hsl(262, 60%, 72%)' },
+    { status: 'Échecs', count: stats?.failed || 0, fill: 'hsl(262, 50%, 80%)' },
   ];
 
   const chartConfig = {
@@ -37,31 +48,31 @@ const AdminDashboard = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <StatCard
             title="Total"
-            value={mockStats.total}
+            value={stats?.total}
             icon={Package}
             variant="default"
           />
           <StatCard
             title="Livrés"
-            value={mockStats.delivered}
+            value={stats?.delivered}
             icon={CheckCircle}
             variant="success"
           />
           <StatCard
             title="En transit"
-            value={mockStats.inTransit}
+            value={stats?.inTransit}
             icon={Truck}
             variant="info"
           />
           <StatCard
             title="En attente"
-            value={mockStats.pending}
+            value={stats?.pending}
             icon={Clock}
             variant="warning"
           />
           <StatCard
             title="Échecs"
-            value={mockStats.failed}
+            value={stats?.failed}
             icon={XCircle}
             variant="destructive"
           />

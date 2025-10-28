@@ -1,3 +1,4 @@
+// src/types/delivery.ts
 export type DeliveryStatus = 'pending' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed';
 
 export interface Delivery {
@@ -37,4 +38,28 @@ export interface DeliveryStats {
   inTransit: number;
   pending: number;
   failed: number;
+}
+
+export interface CreateDeliveryRequest {
+  sender: {
+    name: string;
+    address: string;
+  };
+  recipient: {
+    name: string;
+    address: string;
+    phone: string;
+  };
+  package: {
+    weight: number;
+    dimensions: string;
+    description: string;
+  };
+  estimatedDelivery: string;
+}
+
+export interface UpdateDeliveryStatusRequest {
+  status: DeliveryStatus;
+  location: string;
+  description: string;
 }
