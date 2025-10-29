@@ -27,8 +27,11 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
   const startScanner = async () => {
     try {
       setCameraError('');
-      
+      console.log('Starting QR code scanner...');
+      console.log(scannerContainerRef.current);
       if (!scannerContainerRef.current) return;
+      
+      setIsScanning(true);
 
       // Check camera permissions
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -76,7 +79,6 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
         }
       );
 
-      setIsScanning(true);
     } catch (error: any) {
       console.error('Failed to start scanner:', error);
       setCameraError(
