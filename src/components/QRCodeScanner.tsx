@@ -149,12 +149,12 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
               <div
                 id="qr-scanner-container"
                 ref={scannerContainerRef}
-                className="w-full text-white bg-background rounded-lg overflow-hidden min-h-[300px] flex-col items-center justify-center"
+                className="w-full bg-white/60 bg-none rounded-lg overflow-hidden min-h-[300px]"
               >
                 {!isScanning && (
-                  <div className="text-center p-8">
-                    <QrCode size={48} className="mx-auto text-white mb-4" />
-                    <p className="text-white mb-4">
+                  <div className=" p-8">
+                    <QrCode size={48} className="mx-auto border mb-4" />
+                    <p className=" mb-4">
                       Click start to begin scanning delivery QR codes
                     </p>
                   </div>
@@ -203,7 +203,7 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
         <div className="bg-card p-4 border-t">
           <h3 className="text-sm font-medium text-card-foreground">How to use:</h3>
           <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• Click "Start Scanning" to activate your camera</li>
+            <li>• Click "Start Scanning" -&gt; "Request Camera Permissions" to activate your camera</li>
             <li>• Point your camera at a delivery QR code</li>
             <li>• Hold steady until the code is recognized</li>
             <li>• The delivery details will open automatically</li>

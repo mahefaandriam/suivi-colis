@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Package, Home } from 'lucide-react';
+import { LayoutDashboard, Package, Home, Plus } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +16,7 @@ const menuItems = [
   { title: 'Accueil Client', url: '/', icon: Home },
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
   { title: 'Livraisons', url: '/admin/deliveries', icon: Package },
+  { title: 'Création livraison', url: '/admin/deliveries/new', icon: Plus },
 ];
 
 export function AdminSidebar() {

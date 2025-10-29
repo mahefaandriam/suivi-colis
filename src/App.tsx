@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import { DeliveryList } from "./pages/admin/DeliveryList";
 import AdminDeliveryDetail2 from "./pages/admin/AdminDeliveryDetail2";
 import { QuickScanButton } from "./components/QuickScanButton";
+import { CreateDelivery } from "./pages/admin/CreateDelivery";
 
 const queryClient = new QueryClient();
 
@@ -28,9 +29,8 @@ const App = () => (
             <Route path="/tracking/:id" element={<TrackingPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/deliveries" element={<AdminDeliveries />} />
-            <Route path="/admin/deliveries2" element={<DeliveryList />} />
+            <Route path="/admin/deliveries/new" element={<CreateDelivery />} />
             <Route path="/admin/deliveries/:id" element={<AdminDeliveryDetail />} />
-            <Route path="/admin/deliveries2/:id" element={<AdminDeliveryDetail2 />} />
             <Route path="*" element={<NotFound />} />
           </Routes>          
           <QuickScanButton />

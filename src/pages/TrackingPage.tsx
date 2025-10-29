@@ -5,11 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DeliveryStatusBadge } from '@/components/DeliveryStatusBadge';
 import { DeliveryTimeline } from '@/components/DeliveryTimeline';
 import { getDeliveryById } from '@/data/mockData';
+import { useDelivery } from '@/hooks/useDeliveries';
 
 const TrackingPage = () => {
   const { id } = useParams<{ id: string }>();
+  const { data: delivery, isLoading } = useDelivery(id!);
   const navigate = useNavigate();
-  const delivery = id ? getDeliveryById(id) : undefined;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
 
   if (!delivery) {
     return (

@@ -1,6 +1,6 @@
 // src/components/QuickScanButton.tsx
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { QRCodeScanner } from './QRCodeScanner';
 import { Scan, QrCode } from 'lucide-react';
 import { ScanResult } from '../types/qr';
@@ -8,14 +8,19 @@ import { ScanResult } from '../types/qr';
 export const QuickScanButton = () => {
   const [showScanner, setShowScanner] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleScan = (result: ScanResult) => {
 
     if (result.success && result.data) {
-      console.log("tring to navigate")
-    console.log('Scan result:', result);
-      navigate(`/admin/deliveries/${result.data.deliveryId}`);
-      close();
+      const currentPath = location.pathname.replace(/\/+$/, ''); // normalize trailing slash
+      
+      if (currentPath.includes('/admin')) {
+        navigate(`/admin/deliveries/${result.data.deliveryId}`);
+      } else {
+        navigate(`/tracking/${result.data.deliveryId}`);
+      }
+      handleClose();
     } else {
       alert(result.error || 'Failed to scan QR code');
     }

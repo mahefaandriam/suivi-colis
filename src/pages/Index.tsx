@@ -1,14 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { getDeliveryByTrackingNumber } from '@/data/mockData';
+import { useDeliveryByTracking } from '@/hooks/useDeliveries';
 
 const Index = () => {
   const [trackingNumber, setTrackingNumber] = useState('');
+  const [searchedTracking, setSearchedTracking] = useState<string | null>(null);
   const navigate = useNavigate();
   const heroRef = useRef<HTMLElement | null>(null);
 
@@ -23,7 +24,17 @@ const Index = () => {
       return;
     }
 
-    const delivery = getDeliveryByTrackingNumber(trackingNumber);
+    // trigger the hook to fetch by tracking number
+    setSearchedTracking(trackingNumber.trim());
+  };
+  
+  // use hook to fetch delivery by tracking number
+  const { data: delivery, isLoading } = useDeliveryByTracking(searchedTracking ?? '');
+
+  useEffect(() => {
+    if (!searchedTracking) return;
+    if (isLoading) return;
+
     if (delivery) {
       navigate(`/tracking/${delivery.id}`);
     } else {
@@ -33,7 +44,7 @@ const Index = () => {
         variant: 'destructive',
       });
     }
-  };
+  }, [searchedTracking, isLoading, delivery, navigate]);
 
   const features = [
     {
