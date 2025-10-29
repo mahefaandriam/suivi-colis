@@ -149,12 +149,12 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
               <div
                 id="qr-scanner-container"
                 ref={scannerContainerRef}
-                className="w-full bg-background rounded-lg overflow-hidden min-h-[300px] flex items-center justify-center"
+                className="w-full text-white bg-background rounded-lg overflow-hidden min-h-[300px] flex-col items-center justify-center"
               >
                 {!isScanning && (
                   <div className="text-center p-8">
-                    <QrCode size={48} className="mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-600 mb-4">
+                    <QrCode size={48} className="mx-auto text-white mb-4" />
+                    <p className="text-white mb-4">
                       Click start to begin scanning delivery QR codes
                     </p>
                   </div>
