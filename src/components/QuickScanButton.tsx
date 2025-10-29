@@ -10,11 +10,19 @@ export const QuickScanButton = () => {
   const navigate = useNavigate();
 
   const handleScan = (result: ScanResult) => {
+
     if (result.success && result.data) {
+      console.log("tring to navigate")
+    console.log('Scan result:', result);
       navigate(`/admin/deliveries/${result.data.deliveryId}`);
+      close();
     } else {
       alert(result.error || 'Failed to scan QR code');
     }
+  };
+
+  const handleClose = () => {
+    setShowScanner(false);
   };
 
   return (
@@ -30,7 +38,7 @@ export const QuickScanButton = () => {
       {showScanner && (
         <QRCodeScanner
           onScan={handleScan}
-          onClose={() => setShowScanner(false)}
+          onClose={handleClose}
         />
       )}
     </>

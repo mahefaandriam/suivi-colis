@@ -27,15 +27,14 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
   const startScanner = async () => {
     try {
       setCameraError('');
-      console.log('Starting QR code scanner...');
-      console.log(scannerContainerRef.current);
+
       if (!scannerContainerRef.current) return;
-      
+
       setIsScanning(true);
 
       // Check camera permissions
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "environment" } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
       });
       stream.getTracks().forEach(track => track.stop());
       setHasPermission(true);
@@ -55,21 +54,22 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
         (decodedText) => {
           try {
             const qrData: QRCodeData = JSON.parse(decodedText);
-            
+
             // Validate QR code data structure
             if (qrData.type === 'delivery' && qrData.trackingNumber && qrData.deliveryId) {
               onScan({ success: true, data: qrData });
               stopScanner();
+              onClose();
             } else {
-              onScan({ 
-                success: false, 
-                error: 'Invalid QR code format' 
+              onScan({
+                success: false,
+                error: 'Invalid QR code format'
               });
             }
           } catch (error) {
-            onScan({ 
-              success: false, 
-              error: 'Invalid QR code data' 
+            onScan({
+              success: false,
+              error: 'Invalid QR code data'
             });
           }
         },
@@ -82,7 +82,7 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
     } catch (error: any) {
       console.error('Failed to start scanner:', error);
       setCameraError(
-        error.name === 'NotAllowedError' 
+        error.name === 'NotAllowedError'
           ? 'Camera access denied. Please allow camera permissions.'
           : 'Failed to access camera. Please ensure your device has a camera and try again.'
       );
@@ -93,8 +93,10 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
   const stopScanner = async () => {
     if (scannerRef.current) {
       try {
-        await scannerRef.current.clear();
+        const scanner = scannerRef.current;
         scannerRef.current = null;
+        // Clear the scanner
+        await scanner.clear();
       } catch (error) {
         console.error('Error stopping scanner:', error);
       }
@@ -144,7 +146,7 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
           ) : (
             <>
               {/* Scanner Container */}
-              <div 
+              <div
                 id="qr-scanner-container"
                 ref={scannerContainerRef}
                 className="w-full bg-background rounded-lg overflow-hidden min-h-[300px] flex items-center justify-center"
@@ -163,11 +165,10 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
               <div className="mt-4 flex flex-col gap-3">
                 <button
                   onClick={toggleScanner}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md font-medium transition-colors ${
-                    isScanning
-                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                      : 'text-primary-foreground border border-input bg-background hover:bg-accent hover:text-accent-foreground'
-                  }`}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md font-medium transition-colors ${isScanning
+                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                    : 'text-primary-foreground border border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                    }`}
                 >
                   {isScanning ? (
                     <>
