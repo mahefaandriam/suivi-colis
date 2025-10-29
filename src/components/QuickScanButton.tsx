@@ -11,7 +11,7 @@ export const QuickScanButton = () => {
 
   const handleScan = (result: ScanResult) => {
     if (result.success && result.data) {
-      navigate(`/deliveries/${result.data.deliveryId}`);
+      navigate(`/admin/deliveries/${result.data.deliveryId}`);
     } else {
       alert(result.error || 'Failed to scan QR code');
     }
