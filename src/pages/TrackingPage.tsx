@@ -6,10 +6,11 @@ import { DeliveryStatusBadge } from '@/components/DeliveryStatusBadge';
 import { DeliveryTimeline } from '@/components/DeliveryTimeline';
 import { getDeliveryById } from '@/data/mockData';
 import { useDelivery } from '@/hooks/useDeliveries';
+import { usePublicDelivery } from '@/hooks/usePublicDeliveries';
 
 const TrackingPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { data: delivery, isLoading } = useDelivery(id!);
+  const { data: delivery, isLoading } = usePublicDelivery(id!);
   const navigate = useNavigate();
 
   if (isLoading) {

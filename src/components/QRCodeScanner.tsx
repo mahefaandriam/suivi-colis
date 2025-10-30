@@ -32,7 +32,7 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
 
       setIsScanning(true);
 
-      // Check camera permissions
+      // Vérifier les permissions de la caméra
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" }
       });
@@ -55,7 +55,7 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
           try {
             const qrData: QRCodeData = JSON.parse(decodedText);
 
-            // Validate QR code data structure
+            // Validation de la structure du QR code
             if (qrData.type === 'delivery' && qrData.trackingNumber && qrData.deliveryId) {
               onScan({ success: true, data: qrData });
               stopScanner();
@@ -63,28 +63,28 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
             } else {
               onScan({
                 success: false,
-                error: 'Invalid QR code format'
+                error: 'Format de code QR invalide'
               });
             }
           } catch (error) {
             onScan({
               success: false,
-              error: 'Invalid QR code data'
+              error: 'Données du code QR invalides'
             });
           }
         },
         (error) => {
-          // Ignore scanning errors as they're normal during scanning
-          console.debug('QR scanning error:', error);
+          // Ignorer les erreurs normales pendant le scan
+          console.debug('Erreur de scan du QR:', error);
         }
       );
 
     } catch (error: any) {
-      console.error('Failed to start scanner:', error);
+      console.error('Échec du démarrage du scanner :', error);
       setCameraError(
         error.name === 'NotAllowedError'
-          ? 'Camera access denied. Please allow camera permissions.'
-          : 'Failed to access camera. Please ensure your device has a camera and try again.'
+          ? 'Accès à la caméra refusé. Veuillez autoriser l’accès à la caméra.'
+          : 'Impossible d’accéder à la caméra. Vérifiez que votre appareil dispose d’une caméra et réessayez.'
       );
       setHasPermission(false);
     }
@@ -95,10 +95,10 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
       try {
         const scanner = scannerRef.current;
         scannerRef.current = null;
-        // Clear the scanner
+        // Nettoyer le scanner
         await scanner.clear();
       } catch (error) {
-        console.error('Error stopping scanner:', error);
+        console.error('Erreur lors de l’arrêt du scanner :', error);
       }
     }
     setIsScanning(false);
@@ -115,11 +115,11 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 text-black">
       <div className="bg-card rounded-lg max-w-md w-full max-h-[90vh] overflow-hidden border">
-        {/* Header */}
+        {/* En-tête */}
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <Scan size={20} className="text-card-foreground" />
-            <h2 className="text-lg font-semibold text-muted-foreground">Scan QR Code</h2>
+            <h2 className="text-lg font-semibold text-muted-foreground">Scanner un code QR</h2>
           </div>
           <button
             onClick={onClose}
@@ -129,39 +129,39 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
           </button>
         </div>
 
-        {/* Scanner Content */}
+        {/* Contenu du scanner */}
         <div className="p-4">
           {cameraError ? (
             <div className="text-center py-8">
               <CameraOff size={48} className="mx-auto text-red-500 mb-4" />
-              <p className="text-red-600 font-medium mb-2">Camera Error</p>
+              <p className="text-red-600 font-medium mb-2">Erreur de caméra</p>
               <p className="text-gray-600 text-sm mb-4">{cameraError}</p>
               <button
                 onClick={startScanner}
                 className="px-4 py-2 bg-primary-600 text-black rounded-md hover:bg-primary-700"
               >
-                Try Again
+                Réessayer
               </button>
             </div>
           ) : (
             <>
-              {/* Scanner Container */}
+              {/* Conteneur du scanner */}
               <div
                 id="qr-scanner-container"
                 ref={scannerContainerRef}
                 className="w-full bg-white/60 bg-none rounded-lg overflow-hidden min-h-[300px]"
               >
                 {!isScanning && (
-                  <div className=" p-8">
+                  <div className="p-8">
                     <QrCode size={48} className="mx-auto border mb-4" />
-                    <p className=" mb-4">
-                      Click start to begin scanning delivery QR codes
+                    <p className="mb-4">
+                      Cliquez sur « Démarrer » pour commencer le scan des codes QR de livraison
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Scanner Controls */}
+              {/* Commandes du scanner */}
               <div className="mt-4 flex flex-col gap-3">
                 <button
                   onClick={toggleScanner}
@@ -173,12 +173,12 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
                   {isScanning ? (
                     <>
                       <CameraOff size={20} />
-                      Stop Scanning
+                      Arrêter le scan
                     </>
                   ) : (
                     <>
                       <Camera size={20} />
-                      Start Scanning
+                      Démarrer le scan
                     </>
                   )}
                 </button>
@@ -187,10 +187,10 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
                   <div className="text-center">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      Scanning...
+                      Scan en cours...
                     </div>
                     <p className="text-gray-500 text-sm mt-2">
-                      Point your camera at a delivery QR code
+                      Pointez votre caméra vers un code QR de livraison
                     </p>
                   </div>
                 )}
@@ -201,12 +201,12 @@ export const QRCodeScanner = ({ onScan, onClose }: QRCodeScannerProps) => {
 
         {/* Instructions */}
         <div className="bg-card p-4 border-t">
-          <h3 className="text-sm font-medium text-card-foreground">How to use:</h3>
+          <h3 className="text-sm font-medium text-card-foreground">Comment utiliser :</h3>
           <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• Click "Start Scanning" -&gt; "Request Camera Permissions" to activate your camera</li>
-            <li>• Point your camera at a delivery QR code</li>
-            <li>• Hold steady until the code is recognized</li>
-            <li>• The delivery details will open automatically</li>
+            <li>• Cliquez sur « Démarrer le scan » → « Autoriser l’accès à la caméra » pour activer la caméra</li>
+            <li>• Pointez la caméra vers un code QR de livraison</li>
+            <li>• Gardez l’appareil stable jusqu’à ce que le code soit reconnu</li>
+            <li>• Les détails de la livraison s’ouvriront automatiquement</li>
           </ul>
         </div>
       </div>

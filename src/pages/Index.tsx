@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { useDeliveryByTracking } from '@/hooks/useDeliveries';
+import { usePublicDeliveryByTracking } from '@/hooks/usePublicDeliveries';
 
 const Index = () => {
   const [trackingNumber, setTrackingNumber] = useState('');
@@ -29,7 +29,7 @@ const Index = () => {
   };
   
   // use hook to fetch delivery by tracking number
-  const { data: delivery, isLoading } = useDeliveryByTracking(searchedTracking ?? '');
+  const { data: delivery, isLoading } = usePublicDeliveryByTracking(trackingNumber || '');
 
   useEffect(() => {
     if (!searchedTracking) return;
