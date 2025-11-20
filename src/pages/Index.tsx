@@ -94,7 +94,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <Hero>
       <section
         ref={heroRef}
         onMouseMove={(e) => {
