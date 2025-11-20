@@ -38,6 +38,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     <span className="hidden md:block">
                       {user?.firstName} {user?.lastName}
                     </span>
+                    <span className="hidden md:block">
+                      /{user?.role}
+                    </span>
                   </button>
 
                   {showUserMenu && (

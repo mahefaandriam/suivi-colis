@@ -42,6 +42,7 @@ export const Register = () => {
     email: false,
     password: false,
     confirmPassword: false,
+    role: false,
   });
 
   const { register } = useAuth();
@@ -112,6 +113,7 @@ export const Register = () => {
       email: true,
       password: true,
       confirmPassword: true,
+      role: true,
     });
 
     if (!canSubmit()) {
@@ -120,6 +122,10 @@ export const Register = () => {
     }
 
     try {
+      // if from servo registration
+      //formData.role = 'admin';
+      // else default to 'driver'
+      formData.role = 'driver';
       await register(formData);
       // Redirection vers la page de connexion avec message de succès
       navigate('/login', {
@@ -168,10 +174,10 @@ export const Register = () => {
             </div>
           </div>
           <h2 className="mt-6 text-3xl font-extrabold">
-            Créez votre compte
+            Créez votre compte un compte livreur
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Vous avez déjà un compte ?{' '}
+            Vous avez déjà un compte ?{' '} 
             <Link
               to="/login"
               className="font-medium text-gray-400 hover:text-primary-500"

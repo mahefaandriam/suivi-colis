@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, data } from 'react-router-dom';
 import { ArrowLeft, Package, MapPin, Calendar, Weight, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,14 +6,81 @@ import { DeliveryStatusBadge } from '@/components/DeliveryStatusBadge';
 import { DeliveryTimeline } from '@/components/DeliveryTimeline';
 import { getDeliveryById } from '@/data/mockData';
 import { useDelivery } from '@/hooks/useDeliveries';
-import { usePublicDelivery } from '@/hooks/usePublicDeliveries';
+import { usePublicDeliveryByTracking } from '@/hooks/usePublicDeliveries';
+import { io, Socket } from 'socket.io-client';
+import { use, useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import PublicTrackingMap from '@/components/admin/PublicTrackingMap';
+
+type CustomerLocation = {
+  lat: number;
+  lng: number;
+  color: string;
+};
 
 const TrackingPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { data: delivery, isLoading } = usePublicDelivery(id!);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data: delivery, isLoading } = usePublicDeliveryByTracking(id!, user.email);
+  const [socket, setSocket] = useState(null);
+  const [driverDriver, setDriverDriver] = useState([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const [driverLocation, setDriverLocation] = useState({ lat: 0, lng: 0 });
+  const [customerLocation, setCustomerLocation] = useState<CustomerLocation[]>([]);
+  const [customerColor, setCustomerColor] = useState("#717171");
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    if (!isLoading && socketRef.current) {      
+        console.log("emit assign for delivery : " , delivery)
+      socketRef.current.emit('client_connect', { clientId: user.id, adminId: delivery?.createdBy, name: user.firstName });
+    }
+  }, [isLoading, socketRef.current]);
+
+  useEffect(() => {
+    const newSocket = io('http://localhost:3004');
+    setSocket(newSocket);
+    socketRef.current = newSocket;
+
+    //newSocket.emit('get_public_driver_location', { trackingNumber: delivery?.trackingNumber });
+
+
+    newSocket.on('public_driver_location', (data) => {
+
+      console.log('Received driver locations:', data);
+      console.log('latitude:', parseFloat(data[0].lat));
+      console.log('longitude:', parseFloat(data[0].lng));
+
+      setDriverDriver(data || []);
+      setCustomerColor(data[0].colis_theme);
+      setDriverLocation({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lng) });
+    });
+
+    newSocket.on('location_updated', (data) => {
+      console.log('Received driver locations update:', data.latitude, data.longitude);
+      // console.log('latitude:', parseFloat(data[0].latitude));
+      //   console.log('longitude:', parseFloat(data[0].longitude));
+      setDriverLocation({ lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) });
+    });
+
+    setIsConnected(true);
+
+    return () => { newSocket.close() };
+  }, []);
+
+  useEffect(() => {
+    if (delivery && isLoading === false) {
+      // setCustomerLocation({lat: parseFloat(delivery.recipient.localisation), lng: parseFloat(delivery.recipient.localisation)});
+      const [dLat, dLng] = delivery.recipient.localisation
+        .split(",")
+        .map((v: string) => parseFloat(v.trim()));
+      setCustomerLocation([{ lat: dLat, lng: dLng, color: customerColor }]);
+    }
+  }, [isLoading, delivery]);
 
   if (isLoading) {
+
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
@@ -52,7 +119,7 @@ const TrackingPage = () => {
 
       <div className="container mx-auto max-w-6xl px-4 py-8">
         {/* Status Overview */}
-        <Card className="mb-6 shadow-lg">
+        <Card className="mb-6 shadow-lg" style={{ backgroundColor: customerColor + "20" }}>
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -85,6 +152,9 @@ const TrackingPage = () => {
               <CardContent>
                 <DeliveryTimeline timeline={delivery.timeline} />
               </CardContent>
+            </Card>
+            <Card className="shadow-md">
+              <PublicTrackingMap driver={driverLocation} customers={customerLocation} />
             </Card>
           </div>
 

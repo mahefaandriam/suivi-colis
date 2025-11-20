@@ -58,8 +58,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = async (credentials: LoginCredentials) => {
+    console.log("AuthContext login called");
     try {
       const response = await authApi.login(credentials);
+      console.log("Login response:", response);
       tokenService.setToken(response.token);
       tokenService.setUser(response.user);
       setUser(response.user);

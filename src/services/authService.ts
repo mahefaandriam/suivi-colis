@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { LoginCredentials, RegisterData, AuthResponse, User } from '../types/auth';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'http://localhost:3004/api';
 
 // Create axios instance with interceptors
 const api = axios.create({
