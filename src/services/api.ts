@@ -86,6 +86,20 @@ export const driverApi = {
     return response.data.data;
   },
 
+  // Get driver by admin (Admin only)
+  getDriversByAdmin: async (adminId: string): Promise<User[]> => {
+    console.log("Attempt to get Driver of admin")
+    const response = await api.get(`/drivers/admin/${adminId}`);
+    console.log("Driver for admin", response);
+    return response.data[0];
+  },
+
+  // Get all deliveries (user-specific)
+  getAllDeliveries: async (): Promise<Delivery[]> => {
+    const response = await api.get('/deliveries');
+    return response.data.data;
+  },
+
   // Get deliveries driver location by delivery ID (user-specific)
   getDriverLocationById: async (driverId: string): Promise<{ lat: number; lng: number }> => {
     const response = await api.get(`/deliveries/location/driver/${driverId}`);

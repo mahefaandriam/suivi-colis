@@ -21,6 +21,7 @@ import { Register } from "./pages/Register";
 import DriverDeliveries from "./pages/admin/DriverDelivries";
 import UserDashboard from "./pages/admin/UserDashboard";
 import { SocketProvider } from "./contexts/AdminSocketContext";
+import { DriverGestion } from "./pages/admin/DriverGestion";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,13 @@ const App = () => (
                     <AdminDashboard />
                   </ProtectedRoute>
                 } />
+                
+                <Route path="/admin/driver" element={
+                  <ProtectedRoute requiredRole={["admin"]} >
+                    <DriverGestion />
+                  </ProtectedRoute>
+                } />
+
                 <Route path="/admin-client" element={
                   <ProtectedRoute  >
                     <UserDashboard />

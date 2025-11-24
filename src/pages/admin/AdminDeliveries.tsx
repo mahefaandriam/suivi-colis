@@ -34,22 +34,57 @@ const AdminDeliveries = () => {
 
   const [allDeliveries, setAllDeliveries] = useState<DeliveryDriverLocation[]>([]);
 
+  const [loading, setLoading] = useState(false);
+
 
   const { user } = useAuth();
 
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    
+  const fetchDeliveries = (filters = {}) => {
     if (!socket) return;
 
-    socket.on('admin_connected', (data) => {
-      
+    setLoading(true);
+    socket.emit('get_admin_deliveries', {
+      adminId: user.id,
+      filters
+    });
+  };
+
+  useEffect(() => {
+
+    if (!socket) return;
+
+    fetchDeliveries();
+
+    socket.on('admin_deliveries_data', (data) => {
+      setLoading(false);
+
       setAllDeliveries(data.allDeliveries || []);
 
 
-      console.log("all : " , data.allDeliveries)
+      console.log("all : ", data.allDeliveries)
+
+      setDrivers(prev => {
+        const appended = [
+          ...prev,
+          ...data.allDeliveries.map(d => formatDeliveryRow(d).driver)
+        ];
+
+        // remove duplicates by driver.id
+        return [...new Map(appended.map(d => [d.id, d])).values()];
+      });
+
+      setCustomers(data.allDeliveries.map(d => formatDeliveryRow(d).customer));
+    })
+
+    socket.on('admin_connected', (data) => {
+
+      setAllDeliveries(data.allDeliveries || []);
+
+
+      console.log("all : ", data.allDeliveries)
 
       setDrivers(prev => {
         const appended = [
@@ -67,11 +102,13 @@ const AdminDeliveries = () => {
     // Listen for driver position updates
     socket.on('driver_position_updated', (data) => {
       const { driverId, position } = data;
-      
+
+      console.log("new postion of drivers :  " , data)
+
       // Update the driver's location in state
-      setDrivers(prevDrivers => 
-        prevDrivers.map(driver => 
-          driver.id === driverId 
+      setDrivers(prevDrivers =>
+        prevDrivers.map(driver =>
+          driver.id === driverId
             ? { ...driver, lat: position.lat, lng: position.lng }
             : driver
         )
@@ -252,7 +289,7 @@ const AdminDeliveries = () => {
               <Card>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-xs">
                       <thead className="border-b bg-muted/50">
                         <tr>
                           <th className="px-4 py-3 text-left text-sm font-medium">N° de suivi</th>
@@ -289,9 +326,15 @@ const AdminDeliveries = () => {
                 </CardContent>
               </Card>
             </div>
+          ) : isLoading ? (
+            <div className="min-h-screen flex items-center justify-center">
+              <div className="animate-spin rounded-full h-20 w-20 border-b-2 border-primary-500"></div>
+            </div>
           ) : (
             <h2>No deliveries assigned to Drivers.</h2>
           )}
+
+
         </div>
 
 

@@ -16,18 +16,27 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    if (!user || user.role !== "admin")  return; // ⛔ no socket if not admin
+    if (!user) return; // ⛔ no socket if not admin
+
 
     const newSocket = io("http://localhost:3004", {
       transports: ["websocket"],
     });
 
-    console.log("Admin connected to socket:", user.id);
+    if (user.role === "admin") {
+      console.log("Admin connected to socket:", user.id);
 
-    newSocket.emit("admin_connect", {
-      adminId: user.id,
-      username: user.firstName,
-    });
+      newSocket.emit("admin_connect", {
+        adminId: user.id,
+        username: user.firstName,
+      });
+    };
+
+    if (user.role === "user") {
+      console.log("Client connected to socket:", user.id);
+
+      newSocket.emit('client_connect', { clientId: user.id, name: user.firstName });
+    };
 
     setSocket(newSocket);
 

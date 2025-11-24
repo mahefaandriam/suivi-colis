@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { DeliveryStatusBadge } from '@/components/DeliveryStatusBadge';
 import { mockDeliveries } from '@/data/mockData';
 import { Download, Package, Plus, Search } from 'lucide-react';
-import { useDeliveries } from '@/hooks/useDeliveries';
+import { useDeliveries, useUpdateDeliveryStatus } from '@/hooks/useDeliveries';
 import { DeliveryStatus } from '@/types/delivery';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +31,15 @@ const DriverDeliveries = () => {
   const [statusFilter, setStatusFilter] = useState<DeliveryStatus | 'all'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'status' | 'tracking'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+
+  const updateStatusMutation = useUpdateDeliveryStatus();
+
+  const [updateData, setUpdateData] = useState({
+    status: '',
+    location: '',
+    description: ''
+  });
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -103,48 +112,99 @@ const DriverDeliveries = () => {
       startLocationTracking();
     }
   };*/
+
+  let lastSentLocation = null;
+  let lastUpdateTime = 0;
+  const MIN_DISTANCE_CHANGE = 10; // meters
+  const MIN_TIME_INTERVAL = 5000; // 5 seconds
+  const MIN_TIME_INTERVAL_BACKGROUND = 30000; // 30 seconds in background
+
   const startLocationTracking = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported.");
-      setLocalisationError('Geoloclisation is not supported')
+      setLocalisationError('Geolocation is not supported');
       return;
     }
 
-    // --- Watch for real-time GPS changes ---
+    let isInBackground = false;
+
+    document.addEventListener('visibilitychange', () => {
+      isInBackground = document.hidden;
+    });
+
     watchId = navigator.geolocation.watchPosition(
       (position) => {
+        const now = Date.now();
+        const currentCoords = position.coords;
+
+        // Calculate minimum interval based on background state
+        const minInterval = isInBackground ? MIN_TIME_INTERVAL_BACKGROUND : MIN_TIME_INTERVAL;
+
+        // Check time threshold
+        if (now - lastUpdateTime < minInterval) {
+          return;
+        }
+
+        // Check distance threshold (if we have previous location)
+        if (lastSentLocation) {
+          const distance = calculateDistance(
+            lastSentLocation.latitude,
+            lastSentLocation.longitude,
+            currentCoords.latitude,
+            currentCoords.longitude
+          );
+
+          if (distance < MIN_DISTANCE_CHANGE) {
+            return;
+          }
+        }
+
         sendLocation(position);
+        lastSentLocation = {
+          latitude: currentCoords.latitude,
+          longitude: currentCoords.longitude
+        };
+        lastUpdateTime = now;
+
+        console.log(`Location updated - Distance: ${lastSentLocation ? calculateDistance(
+          lastSentLocation.latitude,
+          lastSentLocation.longitude,
+          currentCoords.latitude,
+          currentCoords.longitude
+        ).toFixed(2) : 'N/A'}m`);
       },
       (err) => {
-        setLocalisationError('GPS Error')
-        console.error("GPS error", err)
+        setLocalisationError('GPS Error: ' + err.message);
+        console.error("GPS error", err);
       },
       {
         enableHighAccuracy: true,
-        timeout: 5000,
+        timeout: 10000,
         maximumAge: 0,
       }
     );
 
-    // --- Force update every 5 seconds in case watchPosition sleeps ---
-    intervalId = setInterval(() => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          sendLocation(position);
-        },
-        (err) => {
-          setLocalisationError("Interval GPS Error")
-          console.error("Interval GPS error", err)
-        },
-        { enableHighAccuracy: true }
-      );
-    }, 5000);
-
-    return stopLocationTracking;
+    return () => {
+      stopLocationTracking();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   };
 
-  const sendLocation = (position) => {
+  // Haversine formula to calculate distance between two coordinates
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
 
+  const sendLocation = (position) => {
+    console.log("Atempt to update location of driver...")
     const { latitude, longitude, speed, heading } = position.coords;
 
     const locationData = {
@@ -162,7 +222,7 @@ const DriverDeliveries = () => {
     })
 
     if (socketRef.current) {
-      console.log("sending curent location : " , latitude, longitude)
+      console.log("sending curent location : ", latitude, longitude)
       socketRef.current.emit('driver_location_update', {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
@@ -268,6 +328,22 @@ const DriverDeliveries = () => {
     window.URL.revokeObjectURL(url);
   };
 
+
+
+  const handleStatusUpdate = async (delivyId: string, newStatus) => {
+    if (newStatus) {
+      await updateStatusMutation.mutateAsync({
+        id: delivyId,
+        updateData: {
+          status: newStatus as any,
+          location: '',
+          description: ''
+        }
+      });
+      setUpdateData({ status: '', location: '', description: '' });
+    }
+  };
+
   if (isLoading) {
     return (
       <div>
@@ -308,16 +384,6 @@ const DriverDeliveries = () => {
               >
                 <Download className="mr-2 h-5 w-5 " />
                 <span className='hidden md:inline'>Exporter CSV</span>
-              </Button>
-            </button>
-            <button >
-              <Button
-                type="submit" variant="hero" size="lg"
-                className="hero-cta"
-                onClick={() => navigate(`/admin/deliveries/new`)}
-              >
-                <Plus className="mr-2 h-5 w-5 " />
-                <span className='hidden md:inline'>Nouvelle livraison </span>
               </Button>
             </button>
           </div>
@@ -377,10 +443,10 @@ const DriverDeliveries = () => {
                           <th className="px-4 py-3 text-left text-sm font-medium">N° de suivi</th>
                           <th className="px-4 py-3 text-left text-sm font-medium">Destinataire</th>
                           <th className="px-4 py-3 text-left text-sm font-medium">Adresse</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium">Chauffeur</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Client email</th>
                           <th className="px-4 py-3 text-left text-sm font-medium">Statut</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium">Livré au localisation</th>
                           <th className="px-4 py-3 text-left text-sm font-medium">Livraison prévue</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -389,13 +455,31 @@ const DriverDeliveries = () => {
                             <td className="px-4 py-3 font-medium">{delivery.tracking_number}</td>
                             <td className="px-4 py-3">{delivery.recipient_name}</td>
                             <td className="px-4 py-3 text-sm text-muted-foreground">{delivery.recipient_address}</td>
-                            <td className="px-4 py-3 text-sm">{delivery.driver_email}</td>
+                            <td className="px-4 py-3 text-sm">{delivery.recipient_email}</td>
                             <td className="px-4 py-3">
                               <DeliveryStatusBadge status={delivery.status} />
                             </td>
-                            <td className="px-4 py-3 text-sm text-muted-foreground">{delivery.recipient_localisation}</td>
                             <td className="px-4 py-3 text-sm">
                               {new Date(delivery.estimated_delivery).toLocaleDateString('fr-FR')}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                              <button>accpter</button> <button>Reffuser</button>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleStatusUpdate(delivery.id, 'in_transit')}
+                                  disabled={updateStatusMutation.isLoading}
+                                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                                >
+                                  {updateStatusMutation.isLoading ? 'Updating...' : 'Accpter'}
+                                </button>
+                                <button
+                                  onClick={() => handleStatusUpdate(delivery.id, 'failed')}
+                                  disabled={updateStatusMutation.isLoading}
+                                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                                >
+                                  {updateStatusMutation.isLoading ? 'Updating...' : 'Refuser'}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}

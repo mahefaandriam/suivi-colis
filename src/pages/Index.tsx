@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { usePublicDeliveryByTracking, usePublicDeliveryByEmail } from '@/hooks/usePublicDeliveries';
-import { useAuth } from '@/contexts/AuthContext'
-import { Hero } from '@/components/Hero';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSocket } from '@/contexts/AdminSocketContext';
 
 const Index = () => {
+  const { socket } = useSocket();
   const [trackingNumber, setTrackingNumber] = useState('');
   const [searchedTracking, setSearchedTracking] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ const Index = () => {
         description: 'Veuillez vous connecter s\'il vous plait!',
         variant: 'destructive',
       });
-      return ;
+      return;
     }
     if (!trackingNumber.trim()) {
       toast({
@@ -48,10 +49,10 @@ const Index = () => {
   };
 
   // use hook to fetch delivery by tracking number
-   // const { data: delivery, isLoading } = usePublicDeliveryByEmail(user?.email || '');
+  // const { data: delivery, isLoading } = usePublicDeliveryByEmail(user?.email || '');
   const { data: delivery, isLoading } = usePublicDeliveryByTracking(trackingNumber || '', user?.email);
 
-  console.log("delivery found " , delivery);
+  console.log("delivery found ", delivery);
 
   useEffect(() => {
     if (!searchedTracking) return;
@@ -67,6 +68,26 @@ const Index = () => {
       });
     }
   }, [searchedTracking, isLoading, delivery, navigate]);
+
+  useEffect(() => {
+
+    if (!socket) return;
+    console.log("the socket of client is ok : ", socket)
+    socket.on('clietn_connected', (data) => {
+
+
+      console.log("all : ", data.message)
+    });
+
+    // Listen for driver position updates
+    socket.on('driver_position_updated', (data) => {
+      const { driverId, position } = data;
+
+      console.log("driver postion upadated: ", position)
+    });
+
+    return () => { socket.close() };
+  }, []);
 
   const features = [
     {

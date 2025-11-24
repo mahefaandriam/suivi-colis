@@ -125,7 +125,7 @@ export const Register = () => {
       // if from servo registration
       //formData.role = 'admin';
       // else default to 'driver'
-      formData.role = 'driver';
+      formData.role = 'user';
       await register(formData);
       // Redirection vers la page de connexion avec message de succès
       navigate('/login', {

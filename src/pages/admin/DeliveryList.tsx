@@ -185,7 +185,7 @@ export const DeliveryList = () => {
         </div>
         )}
 
-        {user?.role}dhhhhhhhhhhhhhhhhhhhhhhhh
+        {user?.role}
 
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">

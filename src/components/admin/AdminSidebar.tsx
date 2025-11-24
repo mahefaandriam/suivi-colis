@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Package, Home, Plus } from 'lucide-react';
+import { LayoutDashboard, Package, Home, Plus, UserCog } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,7 @@ const menuItemsAdmin = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
   { title: 'Livraisons', url: '/admin/deliveries', icon: Package },
   { title: 'Création livraison', url: '/admin/deliveries/new', icon: Plus },
+  { title: 'Nos livreur', url: '/admin/driver', icon: UserCog },
 ];
 
 const menuItemsDriver = [

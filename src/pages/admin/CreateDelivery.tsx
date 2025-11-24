@@ -290,12 +290,7 @@ export const CreateDelivery = () => {
     const currentLocation = parseCurrentLocation();
 
     
-            
-
-    function tassing(){
-        console.log("emit assign", )
-        socket.emit('admin_assign_driver', {clientId: '947b7411-d97e-467d-b2a9-5069f9e38fce', driverId: '4758f8a3-5426-4a42-b3c0-740133da28fb'})
-    }
+        
 
     return (
         <AdminLayout>
@@ -312,9 +307,6 @@ export const CreateDelivery = () => {
                             Entrez les détails de la livraison ci-dessous
                         </p>
                     </div>
-                    <button onClick={() => tassing()}>
-                        try aasing
-                    </button>
                     {/* Formulaire */}
                     <form onSubmit={handleSubmit} className="space-y-8">
                         {/* Informations de l'expéditeur */}
@@ -567,7 +559,7 @@ export const CreateDelivery = () => {
                                         value={driverEmail}
                                         onChange={e => setDriverUserEmail(e.target.value)}
                                         className="block w-full h-10 p-2 text-base border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary-500 rounded-md"
-                                        placeholder="Email du destinataire"
+                                        placeholder="Email du livreur"
                                     />
                                 </div>
                             </div>

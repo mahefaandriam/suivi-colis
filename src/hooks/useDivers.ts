@@ -15,3 +15,14 @@ export const useDriversFind = (email: string) => {
     }
   );
 };
+
+export const useDriverByAdmin = (AdminId: string) => {
+  const { user } = useAuth();
+  return useQuery(
+    ['drivers', user?.id], // Include user ID in query key for user-specific caching
+    () => driverApi.getDriversByAdmin(AdminId),
+    {
+      enabled: !!user, // Only fetch if user is authenticated
+    }
+  );
+};
