@@ -112,7 +112,7 @@ export default function AdminTrackingMap({
   const mapRef = useRef<L.Map | null>(null);
 
   // Calculate center point based on all drivers and customers
-  const calculateCenter = () => {
+  const calculateCenter = (): [number, number] => {
     if (drivers.length === 0 && customers.length === 0) return [0, 0];
 
     const allPoints = [
@@ -149,7 +149,15 @@ export default function AdminTrackingMap({
           key={`driver-${driver.id}`}
           position={[driver.lat, driver.lng]}
           icon={driverIcons[index % driverIcons.length]}
-          className={focusedDriverId === driver.id ? 'focused-driver' : ''}
+          eventHandlers={{
+            add: (e) => {
+              // Apply focus style when marker is added to map
+              const markerElement = e.target.getElement();
+              if (markerElement && focusedDriverId === driver.id) {
+                markerElement.classList.add('focused-driver');
+              }
+            }
+          }}
         >
 
           <Popup>
@@ -172,7 +180,15 @@ export default function AdminTrackingMap({
           key={`customer-${customer.id}`}
           position={[customer.lat, customer.lng]}
           icon={customerIcon}
-          className={focusedCustomerIds.includes(customer.id) ? 'focused-customer' : ''}
+          eventHandlers={{
+            add: (e) => {
+              // Apply focus style when marker is added to map
+              const markerElement = e.target.getElement();
+              if (markerElement && focusedCustomerIds.includes(customer.id)) {
+                markerElement.classList.add('focused-customer');
+              }
+            }
+          }}
         >
           <Popup>
             <strong>Customer {customer.name || `#${customer.id}`}</strong>
@@ -325,12 +341,12 @@ function RoutingRealtime({ driver, customers, driverIndex }: RoutingRealtimeProp
         extendToWaypoints: false,
         missingRouteTolerance: 0
       },
-      draggableWaypoints: false,
       addWaypoints: false,
       show: false,
       routeWhileDragging: false,
       fitSelectedRoutes: false,
-      createMarker: () => null,
+      //createMarker: () => null,
+      //draggableWaypoints: false,
       showAlternatives: false
     }).addTo(map);
 

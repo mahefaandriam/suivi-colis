@@ -4,7 +4,6 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { DeliveryStatusBadge } from '@/components/DeliveryStatusBadge';
-import { mockDeliveries } from '@/data/mockData';
 import { Download, Package, Plus, Search } from 'lucide-react';
 import { useDeliveries, useUpdateDeliveryStatus } from '@/hooks/useDeliveries';
 import { DeliveryStatus } from '@/types/delivery';

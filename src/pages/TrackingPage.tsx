@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DeliveryStatusBadge } from '@/components/DeliveryStatusBadge';
 import { DeliveryTimeline } from '@/components/DeliveryTimeline';
-import { getDeliveryById } from '@/data/mockData';
 import { useDelivery } from '@/hooks/useDeliveries';
 import { usePublicDeliveryByTracking } from '@/hooks/usePublicDeliveries';
 import { io, Socket } from 'socket.io-client';
