@@ -78,7 +78,7 @@ const DriverDeliveries = () => {
 
       setDeliveries(data);
 
-      const newSocket = io('http://localhost:3004');
+      const newSocket = io(import.meta.env.VITE_API_BASE_URL);
       setSocket(newSocket);
 
       socketRef.current = newSocket;

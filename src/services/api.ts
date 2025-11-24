@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { Delivery, DeliveryStats, CreateDeliveryRequest, UpdateDeliveryStatusRequest, DeliveryStatus, DeliveryDriverLocation } from '../types/delivery';
 
-const API_BASE_URL = 'http://localhost:3004/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL + '/api';
 
 // Create axios instance with interceptors (already set up in authService)
 import api from './authService';

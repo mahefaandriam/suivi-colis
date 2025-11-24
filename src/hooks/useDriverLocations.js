@@ -5,7 +5,7 @@ export function useDriverLocations() {
   const [locations, setLocations] = useState({});
 
   useEffect(() => {
-    const socket = io("http://localhost:3004");
+    const socket = io(import.meta.env.VITE_API_BASE_URL);
 
     socket.on("driver_location_update", data => {
       setLocations(prev => ({

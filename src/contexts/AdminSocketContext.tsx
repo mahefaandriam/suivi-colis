@@ -19,7 +19,7 @@ export const SocketProvider = ({ children }) => {
     if (!user) return; // ⛔ no socket if not admin
 
 
-    const newSocket = io("http://localhost:3004", {
+    const newSocket = io(import.meta.env.VITE_API_BASE_URL, {
       transports: ["websocket"],
     });
 
