@@ -17,23 +17,29 @@ import {
   X
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useDriverLocationSender } from "@/hooks/useDriverLocationSender";
+import { useAuth } from '@/contexts/AuthContext';
 
 export const DeliveryList = () => {
   const { data: deliveries, isLoading } = useDeliveries();
   const deleteDeliveryMutation = useDeleteDelivery();
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<DeliveryStatus | 'all'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'status' | 'tracking'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  // Send driver location if user is a driver
+  useDriverLocationSender(user?.role === 'driver' ? user.id : '');
 
   // Filter and search deliveries
   const filteredDeliveries = useMemo(() => {
     if (!deliveries) return [];
 
     let filtered = deliveries.filter((delivery) => {
-      const matchesSearch = 
+      const matchesSearch =
         delivery.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         delivery.recipient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         delivery.sender.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -172,6 +178,15 @@ export const DeliveryList = () => {
           </div>
         </div>
 
+        {user?.role === 'driver' &&(
+          <div>
+          <h1>Driver App</h1>
+          <p>Sending GPS...</p>
+        </div>
+        )}
+
+        {user?.role}
+
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -301,7 +316,7 @@ export const DeliveryList = () => {
                     >
                       <MoreVertical size={16} className="text-gray-400" />
                     </button>
-                    
+
                     {selectedDelivery === delivery.id && (
                       <div className="absolute right-0 top-8 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-10">
                         <Link

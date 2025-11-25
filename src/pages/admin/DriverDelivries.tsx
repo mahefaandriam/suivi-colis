@@ -1,126 +1,247 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { DeliveryStatusBadge } from '@/components/DeliveryStatusBadge';
 import { Download, Package, Plus, Search } from 'lucide-react';
-import { useDeliveries } from '@/hooks/useDeliveries';
-import { Delivery, DeliveryDriverLocation, DeliveryStatus } from '@/types/delivery';
+import { useDeliveries, useUpdateDeliveryStatus } from '@/hooks/useDeliveries';
+import { DeliveryStatus } from '@/types/delivery';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { deliveryApi } from '@/services/api';
-import 'leaflet/dist/leaflet.css';
-import AdminTrackingMap from '@/components/admin/AdminTrackingMap';
-import { useSocket } from '@/contexts/AdminSocketContext';
+import DriverTrackingMap from '@/components/admin/DriverTrackingMap';
 
-
-
-const AdminDeliveries = () => {
-  const { socket } = useSocket();
+const DriverDeliveries = () => {
+  const [socket, setSocket] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const { data: deliveries, isLoading } = useDeliveries();
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [driverId, setDriverId] = useState('');
+  const [location, setLocation] = useState(null);
+  const [deliveries, setDeliveries] = useState(null);
+  const [driverLocation, setDriverLocation] = useState(null);
+  const [customersLocation, setCustomersLocation] = useState(null);
+  const [isLoading, setIsLoading] = useState(true)
+  const [isConnected, setIsConnected] = useState(false);
+
+  const [localisationError, setLocalisationError] = useState(null);
+  const [driverConnectLoading, setDriverConnectLoading] = useState(true);
 
   const [statusFilter, setStatusFilter] = useState<DeliveryStatus | 'all'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'status' | 'tracking'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const [focusedDriverId, setFocusedDriverId] = useState<string | null>(null);
-  const [focusedCustomerIds, setFocusedCustomerIds] = useState<string[]>([]);
 
-  const [allDeliveries, setAllDeliveries] = useState<DeliveryDriverLocation[]>([]);
+  const updateStatusMutation = useUpdateDeliveryStatus();
 
-  const [loading, setLoading] = useState(false);
+  const [updateData, setUpdateData] = useState({
+    status: '',
+    location: '',
+    description: ''
+  });
 
+  const socketRef = useRef<Socket | null>(null);
 
   const { user } = useAuth();
 
+  let watchId = null;
+  let intervalId = null;
 
   const navigate = useNavigate();
 
-  const fetchDeliveries = (filters = {}) => {
-    if (!socket) return;
-
-    setLoading(true);
-    socket.emit('get_admin_deliveries', {
-      adminId: user.id,
-      filters
-    });
-  };
 
   useEffect(() => {
+    if (driverId && deliveries && socketRef.current) {
+      console.log("data to send : ", driverId, deliveries[0].created_by, user.firstName)
+      socketRef.current.emit('driver_connect', { driverId: driverId, adminId: deliveries[0].created_by, name: user.firstName })
+    }
+  }, [driverId, deliveries, socketRef.current]);
 
-    if (!socket) return;
+  useEffect(() => {
+    setDriverConnectLoading(true);
+    const initializeSocket = async () => {
+      // get deliveries for driver
+      if (user?.role === 'driver') {
+        setDriverId(user.id);
+      }
+      const data = await deliveryApi.getDeliveriesByDriverId(user.id);
 
-    fetchDeliveries();
+      console.log("the deliveries for a driver: ", data)
 
-    socket.on('admin_deliveries_data', (data) => {
-      setLoading(false);
+      setCustomersLocation(data.map(d => {
+        const [lat, lng] = d.recipient_localisation
+          .split(",")
+          .map((v: string) => parseFloat(v.trim()))
+        return { lat, lng, color: d.colis_theme };
+      }))
 
-      setAllDeliveries(data.allDeliveries || []);
+      setDeliveries(data);
 
+      const newSocket = io(import.meta.env.VITE_API_BASE_URL);
+      setSocket(newSocket);
 
-      console.log("all : ", data.allDeliveries)
+      socketRef.current = newSocket;
 
-      setDrivers(prev => {
-        const appended = [
-          ...prev,
-          ...data.allDeliveries.map(d => formatDeliveryRow(d).driver)
-        ];
-
-        // remove duplicates by driver.id
-        return [...new Map(appended.map(d => [d.id, d])).values()];
+      newSocket.on('driver_connected', () => {
+        setIsConnected(true);
+        startLocationTracking();
+        setDriverConnectLoading(false);
       });
 
-      setCustomers(data.allDeliveries.map(d => formatDeliveryRow(d).customer));
+      setIsLoading(false)
+    };
+
+    initializeSocket();
+
+    return () => {
+      if (socket) {
+        socket.close();
+      }
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+    };
+  }, []);
+
+  /*const connectAsDriver = () => {
+    if (driverId && socket) {
+      socket.emit('driver_connect', { driverId });
+      setIsConnected(true);
+      startLocationTracking();
+    }
+  };*/
+
+  let lastSentLocation = null;
+  let lastUpdateTime = 0;
+  const MIN_DISTANCE_CHANGE = 10; // meters
+  const MIN_TIME_INTERVAL = 5000; // 5 seconds
+  const MIN_TIME_INTERVAL_BACKGROUND = 30000; // 30 seconds in background
+
+  const startLocationTracking = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported.");
+      setLocalisationError('Geolocation is not supported');
+      return;
+    }
+
+    let isInBackground = false;
+
+    document.addEventListener('visibilitychange', () => {
+      isInBackground = document.hidden;
+    });
+
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const now = Date.now();
+        const currentCoords = position.coords;
+
+        // Calculate minimum interval based on background state
+        const minInterval = isInBackground ? MIN_TIME_INTERVAL_BACKGROUND : MIN_TIME_INTERVAL;
+
+        // Check time threshold
+        if (now - lastUpdateTime < minInterval) {
+          return;
+        }
+
+        // Check distance threshold (if we have previous location)
+        if (lastSentLocation) {
+          const distance = calculateDistance(
+            lastSentLocation.latitude,
+            lastSentLocation.longitude,
+            currentCoords.latitude,
+            currentCoords.longitude
+          );
+
+          if (distance < MIN_DISTANCE_CHANGE) {
+            return;
+          }
+        }
+
+        sendLocation(position);
+        lastSentLocation = {
+          latitude: currentCoords.latitude,
+          longitude: currentCoords.longitude
+        };
+        lastUpdateTime = now;
+
+        console.log(`Location updated - Distance: ${lastSentLocation ? calculateDistance(
+          lastSentLocation.latitude,
+          lastSentLocation.longitude,
+          currentCoords.latitude,
+          currentCoords.longitude
+        ).toFixed(2) : 'N/A'}m`);
+      },
+      (err) => {
+        setLocalisationError('GPS Error: ' + err.message);
+        console.error("GPS error", err);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+
+    return () => {
+      stopLocationTracking();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  };
+
+  // Haversine formula to calculate distance between two coordinates
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  const sendLocation = (position) => {
+    console.log("Atempt to update location of driver...")
+    const { latitude, longitude, speed, heading } = position.coords;
+
+    const locationData = {
+      latitude,
+      longitude,
+      speed: speed || 0,
+      heading: heading || 0,
+    };
+
+    setLocation(locationData);
+
+    setDriverLocation({
+      lat: latitude,
+      lng: longitude
     })
 
-    socket.on('admin_connected', (data) => {
-
-      setAllDeliveries(data.allDeliveries || []);
-
-
-      console.log("all : ", data.allDeliveries)
-
-      setDrivers(prev => {
-        const appended = [
-          ...prev,
-          ...data.allDeliveries.map(d => formatDeliveryRow(d).driver)
-        ];
-
-        // remove duplicates by driver.id
-        return [...new Map(appended.map(d => [d.id, d])).values()];
+    if (socketRef.current) {
+      console.log("sending curent location : ", latitude, longitude)
+      socketRef.current.emit('driver_location_update', {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        speed: locationData.speed,
+        heading: locationData.heading
       });
+    }
+  };
 
-      setCustomers(data.allDeliveries.map(d => formatDeliveryRow(d).customer));
-    });
-
-    // Listen for driver position updates
-    socket.on('driver_position_updated', (data) => {
-      const { driverId, position } = data;
-
-      console.log("new postion of drivers :  " , data)
-
-      // Update the driver's location in state
-      setDrivers(prevDrivers =>
-        prevDrivers.map(driver =>
-          driver.id === driverId
-            ? { ...driver, lat: position.lat, lng: position.lng }
-            : driver
-        )
-      );
-    });
-
-    return () => { socket.close() };
-  }, []);
+  const stopLocationTracking = () => {
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    if (intervalId !== null) clearInterval(intervalId);
+  };
 
 
   // Filter and search deliveries
   const filteredDeliveries = useMemo(() => {
-    if (!deliveries) return [];
+
+    console.log("all deliveries from use memo : " + deliveries)
+    return [];
 
     let filtered = deliveries.filter((delivery) => {
       const matchesSearch =
@@ -206,44 +327,42 @@ const AdminDeliveries = () => {
     window.URL.revokeObjectURL(url);
   };
 
+
+
+  const handleStatusUpdate = async (delivyId: string, newStatus) => {
+    if (newStatus) {
+      await updateStatusMutation.mutateAsync({
+        id: delivyId,
+        updateData: {
+          status: newStatus as any,
+          location: '',
+          description: ''
+        }
+      });
+      setUpdateData({ status: '', location: '', description: '' });
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
+      <div>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
+        </div>
+        Loading...
       </div>
     );
   }
 
   const hasActiveFilters = searchTerm || statusFilter !== 'all';
 
-  function formatDeliveryRow(row: any) {
-    // Parse recipient localisation "lat, lng"
-    const [custLat, custLng] = row.recipient_localisation
-      .split(",")
-      .map((v: string) => parseFloat(v.trim()));
-
-    const driver = {
-      id: row.driver_id,
-      lat: parseFloat(row.lat),
-      lng: parseFloat(row.lng),
-      name: row.sender_name,  // You can change this if you track real driver names
-      email: row.driver_email,
-    };
-
-    const customer = {
-      id: row.tracking_number,
-      lat: custLat,
-      lng: custLng,
-      name: row.recipient_name,
-      color: row.colis_theme,
-      driverId: row.driver_id
-    };
-
-    return { driver, customer };
-  }
-
-  function setFocusCutomer(trackingNumber: string): void {
-    setFocusedCustomerIds([trackingNumber]);
+  function connectAsDriver() {
+    if (user.role === 'driver' && socket) {
+      setDriverId(user.id);
+      socket.emit('driver_connect', { driverId: user.id });
+      setIsConnected(true);
+      startLocationTracking();
+    }
   }
 
   return (
@@ -266,56 +385,100 @@ const AdminDeliveries = () => {
                 <span className='hidden md:inline'>Exporter CSV</span>
               </Button>
             </button>
-            <button >
-              <Button
-                type="submit" variant="hero" size="lg"
-                className="hero-cta"
-                onClick={() => navigate(`/admin/deliveries/new`)}
-              >
-                <Plus className="mr-2 h-5 w-5 " />
-                <span className='hidden md:inline'>Nouvelle livraison </span>
-              </Button>
-            </button>
           </div>
         </div>
 
+        {driverConnectLoading &&
+          (
+            <div className="min-h-40 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
+            </div>
+          )}
+
+
+        {location && !localisationError && (
+          <div>
+            <h2>Driver: {driverId}</h2>
+            <div className="status">
+              <span className="connected text-green-400">● Connected</span>
+            </div>
+            <div className="location-info">
+              <p>Latitude: {location.latitude.toFixed(6)}</p>
+              <p>Longitude: {location.longitude.toFixed(6)}</p>
+              <p>Speed: {(location.speed * 3.6).toFixed(1)} km/h</p>
+            </div>
+          </div>
+        )}
+        {localisationError && (
+          <div>
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {localisationError}
+            </div>
+            <Button
+              type="submit" variant="hero" size="lg"
+              className="hero-cta disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => {
+                setLocalisationError(null)
+              }}
+            >
+              <Download className="mr-2 h-5 w-5 " />
+              <span className='hidden md:inline'>Retry</span>
+            </Button>
+          </div>
+        )}
+
         <div>
-          {allDeliveries && allDeliveries.length > 0 ? (
+          {deliveries && deliveries.length > 0 ? (
             <div>
 
-              <h2>Deliveries for Drivers:</h2>
+              <h2>Deliveries for Driver {driverId}:</h2>
 
               <Card>
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
+                  <div className="overflow-x-auto text-sm">
+                    <table className="w-full">
                       <thead className="border-b bg-muted/50">
                         <tr>
                           <th className="px-4 py-3 text-left text-sm font-medium">N° de suivi</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium">Client</th>
                           <th className="px-4 py-3 text-left text-sm font-medium">Destinataire</th>
                           <th className="px-4 py-3 text-left text-sm font-medium">Adresse</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium">Chauffeur</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Client email</th>
                           <th className="px-4 py-3 text-left text-sm font-medium">Statut</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium">Livré au localisation</th>
                           <th className="px-4 py-3 text-left text-sm font-medium">Livraison prévue</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Action</th>
                         </tr>
                       </thead>
                       <tbody>
-
-                        {allDeliveries.map((delivery) => (
-                          <tr key={delivery.id} className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => setFocusCutomer(delivery.tracking_number)} style={{ backgroundColor: delivery.colis_theme + "20" }}>
-                            <td className="px-4 py-3 font-medium " >{delivery.tracking_number}</td>
-                            <td className="px-4 py-3">{delivery.recipient_email}</td>
+                        {deliveries.map((delivery) => (
+                          <tr key={delivery.id} className="border-b hover:bg-muted/50">
+                            <td className="px-4 py-3 font-medium">{delivery.tracking_number}</td>
                             <td className="px-4 py-3">{delivery.recipient_name}</td>
                             <td className="px-4 py-3 text-sm text-muted-foreground">{delivery.recipient_address}</td>
-                            <td className="px-4 py-3 text-sm">{delivery.driver_email}</td>
+                            <td className="px-4 py-3 text-sm">{delivery.recipient_email}</td>
                             <td className="px-4 py-3">
                               <DeliveryStatusBadge status={delivery.status} />
                             </td>
-                            <td className="px-4 py-3 text-sm text-muted-foreground">{delivery.recipient_localisation}</td>
                             <td className="px-4 py-3 text-sm">
                               {new Date(delivery.estimated_delivery).toLocaleDateString('fr-FR')}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                              <button>accpter</button> <button>Reffuser</button>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleStatusUpdate(delivery.id, 'in_transit')}
+                                  disabled={updateStatusMutation.isLoading}
+                                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                                >
+                                  {updateStatusMutation.isLoading ? 'Updating...' : 'Accpter'}
+                                </button>
+                                <button
+                                  onClick={() => handleStatusUpdate(delivery.id, 'failed')}
+                                  disabled={updateStatusMutation.isLoading}
+                                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
+                                >
+                                  {updateStatusMutation.isLoading ? 'Updating...' : 'Refuser'}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -325,24 +488,14 @@ const AdminDeliveries = () => {
                 </CardContent>
               </Card>
             </div>
-          ) : isLoading ? (
-            <div className="min-h-screen flex items-center justify-center">
-              <div className="animate-spin rounded-full h-20 w-20 border-b-2 border-primary-500"></div>
-            </div>
           ) : (
-            <h2>No deliveries assigned to Drivers.</h2>
+            <h2>No deliveries assigned to Driver {driverId}.</h2>
           )}
-
-
         </div>
-
 
         <div>
-          <AdminTrackingMap drivers={drivers} customers={customers}
-            focusedDriverId={focusedDriverId}
-            focusedCustomerIds={focusedCustomerIds} />
+          <DriverTrackingMap driver={driverLocation} customers={customersLocation} />
         </div>
-
 
         {/* Search */}
         <Card>
@@ -476,4 +629,4 @@ const AdminDeliveries = () => {
   );
 };
 
-export default AdminDeliveries;
+export default DriverDeliveries;

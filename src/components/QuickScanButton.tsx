@@ -18,7 +18,7 @@ export const QuickScanButton = () => {
       if (currentPath.includes('/admin')) {
         navigate(`/admin/deliveries/${result.data.deliveryId}`);
       } else {
-        navigate(`/tracking/${result.data.deliveryId}`);
+        navigate(`/user/tracking/${result.data.deliveryId}`);
       }
       handleClose();
     } else {

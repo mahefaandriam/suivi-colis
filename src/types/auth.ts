@@ -22,6 +22,7 @@ export interface RegisterData {
   firstName: string;
   lastName: string;
   role?: string;
+  created_by?: string; // only driver creation use
 }
 
 export interface AuthResponse {

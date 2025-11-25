@@ -5,16 +5,36 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { usePublicDeliveryByTracking } from '@/hooks/usePublicDeliveries';
+import { usePublicDeliveryByTracking, usePublicDeliveryByEmail } from '@/hooks/usePublicDeliveries';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSocket } from '@/contexts/AdminSocketContext';
 
 const Index = () => {
+  const { socket } = useSocket();
   const [trackingNumber, setTrackingNumber] = useState('');
   const [searchedTracking, setSearchedTracking] = useState<string | null>(null);
   const navigate = useNavigate();
   const heroRef = useRef<HTMLElement | null>(null);
+  const { user, logout } = useAuth();
+  const [onLogOut, setOnLogOut] = useState(false)
+
+  const handleLogout = async () => {
+    setOnLogOut(true)
+    await logout();
+    setOnLogOut(false)
+  };
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      toast({
+        title: 'Colis non trouvé',
+        description: 'Veuillez vous connecter s\'il vous plait!',
+        variant: 'destructive',
+      });
+      return;
+    }
     if (!trackingNumber.trim()) {
       toast({
         title: 'Erreur',
@@ -27,16 +47,19 @@ const Index = () => {
     // trigger the hook to fetch by tracking number
     setSearchedTracking(trackingNumber.trim());
   };
-  
+
   // use hook to fetch delivery by tracking number
-  const { data: delivery, isLoading } = usePublicDeliveryByTracking(trackingNumber || '');
+  // const { data: delivery, isLoading } = usePublicDeliveryByEmail(user?.email || '');
+  const { data: delivery, isLoading } = usePublicDeliveryByTracking(trackingNumber || '', user?.email);
+
+  console.log("delivery found ", delivery);
 
   useEffect(() => {
     if (!searchedTracking) return;
     if (isLoading) return;
 
     if (delivery) {
-      navigate(`/tracking/${delivery.id}`);
+      navigate(`/user/tracking/${trackingNumber}`);
     } else {
       toast({
         title: 'Colis non trouvé',
@@ -45,6 +68,26 @@ const Index = () => {
       });
     }
   }, [searchedTracking, isLoading, delivery, navigate]);
+
+  useEffect(() => {
+
+    if (!socket) return;
+    console.log("the socket of client is ok : ", socket)
+    socket.on('clietn_connected', (data) => {
+
+
+      console.log("all : ", data.message)
+    });
+
+    // Listen for driver position updates
+    socket.on('driver_position_updated', (data) => {
+      const { driverId, position } = data;
+
+      console.log("driver postion upadated: ", position)
+    });
+
+    return () => { socket.close() };
+  }, []);
 
   const features = [
     {
@@ -109,7 +152,7 @@ const Index = () => {
             }} />
           </div>
         </div>
-        
+
         <div className="container mx-auto max-w-4xl text-center relative z-10">
           <h1 className="mb-4 text-4xl font-bold text-primary-foreground md:text-5xl lg:text-6xl hero-title">
             Trouver votre colis
@@ -139,14 +182,47 @@ const Index = () => {
           </form>
 
           <div className="mt-6">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/admin')}
-              className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
-            >
-              Accès administrateur
-            </Button>
+
+
+            <span className='px-5'>{user?.email} /   {user?.firstName} </span>
+            {user?.role === 'admin' || user?.role === 'driver' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/admin')}
+                className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
+              >
+                Accès administrateur
+              </Button>
+            ) : (user?.role === 'user' ? '' : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/login')}
+                className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
+              >
+                Login
+              </Button>
+            ))
+
+            }
+
+            {user && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleLogout()}
+                className="bg-background/10 backdrop-blur-sm border-primary-foreground/20 text-primary-foreground hover:bg-background/20"
+              >
+                {onLogOut ?
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> :
+                  'Déconnexion'
+                }
+              </Button>
+            )}
+
+
+
           </div>
         </div>
       </section>
