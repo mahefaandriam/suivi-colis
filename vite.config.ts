@@ -5,7 +5,7 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig(({  }) => ({
   server: {
-    port: 3002,
+    port: 3001,
     proxy: {
       '/api': {
         target: 'https://delivery-tracker.up.railway.app',
