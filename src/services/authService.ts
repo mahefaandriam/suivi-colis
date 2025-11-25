@@ -2,7 +2,11 @@
 import axios from 'axios';
 import { LoginCredentials, RegisterData, AuthResponse, User } from '../types/auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL + '/api';
+const baseURL = import.meta.env.VITE_API_BASE_URL;
+
+const API_BASE_URL = baseURL + '/api';
+
+
 
 // Create axios instance with interceptors
 const api = axios.create({

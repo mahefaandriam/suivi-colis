@@ -5,10 +5,10 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig(({  }) => ({
   server: {
-    port: 3001,
+    port: 3002,
     proxy: {
       '/api': {
-        target: 'https://delivery-tracker-backend.vercel.app',
+        target: 'https://delivery-tracker.up.railway.app',
         changeOrigin: true
       }
     }
