@@ -14,12 +14,13 @@ const customerIcon = new L.Icon({
   iconSize: [40, 40],
 });
 
- const calculateCenter = (customers) => {
+type Customer = { id: string | number; lat: number; lng: number; color?: string };
+type Driver = { lat: number; lng: number };
+
+ const calculateCenter = (customers: Customer[]): [number, number] => {
     if (customers.length === 0) return [0, 0];
     
-    const allPoints = [
-      ...customers.map(c => [c.lat, c.lng])
-    ];
+    const allPoints: [number, number][] = customers.map(c => [c.lat, c.lng]);
     
     const avgLat = allPoints.reduce((sum, point) => sum + point[0], 0) / allPoints.length;
     const avgLng = allPoints.reduce((sum, point) => sum + point[1], 0) / allPoints.length;
@@ -30,14 +31,15 @@ const customerIcon = new L.Icon({
 // UTILITY: generate random color
 const getRandomColor = () =>
   `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0")}`;
-
-export default function PublicTrackingMap({ driver, customers }) {
+export default function PublicTrackingMap({ driver, customers }: { driver?: Driver | null; customers: Customer[] }) {
 
   console.log("PublicTrackingMap render", { driver, customers });
 
+  const center: [number, number] = driver ? [driver.lat, driver.lng] : calculateCenter(customers);
+
   return (
     <MapContainer
-      center={driver ? [driver.lat, driver.lng] : calculateCenter(customers)}
+      center={center}
       zoom={14}
       style={{ height: "100vh", width: "100%" }}
       
@@ -76,19 +78,22 @@ export default function PublicTrackingMap({ driver, customers }) {
 ------------------------------------- */
 function RoutingRealtime({ driver, customers }) {
   const map = useMap();
-  const routingControlsRef = useRef<L.Routing.Control[]>([]);
+  const routingControlsRef = useRef<{ control: any; label?: L.Marker }[]>([]);
 
   useEffect(() => {
     if (!map) return;
 
-    // Remove old routes
-    routingControlsRef.current.forEach((control) => map.removeControl(control));
+    // Remove old routes and labels
+    routingControlsRef.current.forEach((item) => {
+      if (item.control) map.removeControl(item.control);
+      if (item.label) map.removeLayer(item.label);
+    });
     routingControlsRef.current = [];
 
     customers.forEach((customer) => {
       const color = customer.color;
 
-      const control = L.Routing.control({
+      const control = L.Routing.control(({
         waypoints: [L.latLng(driver.lat, driver.lng), L.latLng(customer.lat, customer.lng)],
         lineOptions: { 
           styles: [{ color, weight: 5 }],
@@ -96,14 +101,13 @@ function RoutingRealtime({ driver, customers }) {
           extendToWaypoints: false,
           missingRouteTolerance: 0
         },
-        draggableWaypoints: false,
         addWaypoints: false,
         show: false,
         routeWhileDragging: false,
         fitSelectedRoutes: false,
         createMarker: () => null, // This removes the default markers
         showAlternatives: false
-      }).addTo(map);
+      } as any)).addTo(map);
 
       // Add customer ID to the route line
       control.on('routesfound', function(e) {

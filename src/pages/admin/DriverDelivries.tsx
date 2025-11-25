@@ -185,7 +185,7 @@ const DriverDeliveries = () => {
 
     return () => {
       stopLocationTracking();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('visibilitychange', () => {});
     };
   };
 
