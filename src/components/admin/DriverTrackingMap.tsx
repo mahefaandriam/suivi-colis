@@ -251,7 +251,9 @@ function RoutingToCustomers({ driver, customers }: RoutingToCustomersProps) {
             color: routeColor,
             weight: 6,
             opacity: 0.8
-          }]
+          }],
+          extendToWaypoints: false,
+          missingRouteTolerance: 0
         },
         show: false, // Hide the default control panel
         routeWhileDragging: false,

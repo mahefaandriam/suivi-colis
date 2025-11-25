@@ -10,8 +10,6 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminDeliveries from "./pages/admin/AdminDeliveries";
 import AdminDeliveryDetail from "./pages/admin/AdminDeliveryDetail";
 import NotFound from "./pages/NotFound";
-import { DeliveryList } from "./pages/admin/DeliveryList";
-import AdminDeliveryDetail2 from "./pages/admin/AdminDeliveryDetail2";
 import { QuickScanButton } from "./components/QuickScanButton";
 import { CreateDelivery } from "./pages/admin/CreateDelivery";
 import { Login } from "./pages/Login";
