@@ -472,7 +472,7 @@ const DriverDeliveries = () => {
                                   {updateStatusMutation.isLoading ? 'Updating...' : 'Accpter'}
                                 </button>
                                 <button
-                                  onClick={() => handleStatusUpdate(delivery.id, 'failed')}
+                                  onClick={() => handleStatusUpdate(delivery.id, 'cancelled')}
                                   disabled={updateStatusMutation.isLoading}
                                   className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
                                 >
