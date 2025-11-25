@@ -4,10 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DeliveryStatusBadge } from '@/components/DeliveryStatusBadge';
 import { DeliveryTimeline } from '@/components/DeliveryTimeline';
-import { useDelivery } from '@/hooks/useDeliveries';
-import { usePublicDeliveryByTracking } from '@/hooks/usePublicDeliveries';
-import { io, Socket } from 'socket.io-client';
-import { use, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PublicTrackingMap from '@/components/admin/PublicTrackingMap';
 import { useSocket } from '@/contexts/AdminSocketContext';
@@ -34,61 +31,68 @@ const TrackingPage = () => {
   const [driverLocation, setDriverLocation] = useState({ lat: 0, lng: 0 });
   const [customerLocation, setCustomerLocation] = useState<CustomerLocation[]>([]);
   const [customerColor, setCustomerColor] = useState("#717171");
-//  const socketRef = useRef<Socket | null>(null);
-/*
+  //  const socketRef = useRef<Socket | null>(null);
+  /*
+    useEffect(() => {
+      if (!isLoading && socketRef.current) {      
+      //    console.log("emit assign for delivery : " , delivery)
+       /// socketRef.current.emit('client_connect', { clientId: user.id, adminId: delivery?.createdBy, name: user.firstName });
+      }
+    }, [isLoading, socketRef.current]);
+  */
   useEffect(() => {
-    if (!isLoading && socketRef.current) {      
-    //    console.log("emit assign for delivery : " , delivery)
-     /// socketRef.current.emit('client_connect', { clientId: user.id, adminId: delivery?.createdBy, name: user.firstName });
-    }
-  }, [isLoading, socketRef.current]);
-*/
-  useEffect(() => {
-  /*  const newSocket = io(import.meta.env.VITE_API_BASE_URL);
-    setSocket(newSocket);
-    socketRef.current = newSocket;
-*/
+    /*  const newSocket = io(import.meta.env.VITE_API_BASE_URL);
+      setSocket(newSocket);
+      socketRef.current = newSocket;
+  */
     //newSocket.emit('get_public_driver_location', { trackingNumber: delivery?.trackingNumber });
-/*
-
-    newSocket.on('public_driver_location', (data) => {
-
-      console.log('Received driver locations:', data);
-      console.log('latitude:', parseFloat(data[0].lat));
-      console.log('longitude:', parseFloat(data[0].lng));
-
-      setDriverDriver(data || []);
-      setCustomerColor(data[0].colis_theme);
-      setDriverLocation({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lng) });
-    });*/
-/*
-    newSocket.on('location_updated', (data) => {
-      console.log('Received driver locations update:', data.latitude, data.longitude);
-      // console.log('latitude:', parseFloat(data[0].latitude));
-      //   console.log('longitude:', parseFloat(data[0].longitude));
-      setDriverLocation({ lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) });
-    });*/
-
+    /*
     
-    const initialize= async () => {
-      
-            const data = await publicDeliveryApi.getDeliveryByTrackingNumber(id, user.email)
-           setDelivery(data);
-    }
+        newSocket.on('public_driver_location', (data) => {
+    
+          console.log('Received driver locations:', data);
+          console.log('latitude:', parseFloat(data[0].lat));
+          console.log('longitude:', parseFloat(data[0].lng));
+    
+          setDriverDriver(data || []);
+          setCustomerColor(data[0].colis_theme);
+          setDriverLocation({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lng) });
+        });*/
+    /*
+        newSocket.on('location_updated', (data) => {
+          console.log('Received driver locations update:', data.latitude, data.longitude);
+          // console.log('latitude:', parseFloat(data[0].latitude));
+          //   console.log('longitude:', parseFloat(data[0].longitude));
+          setDriverLocation({ lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) });
+        });*/
+
+    const trackingRegex = /^TRK[0-9]+$/;
+
+    const initialize = async () => {
+      let data;
+
+      if (trackingRegex.test(id)) {
+        data = await publicDeliveryApi.getDeliveryByTrackingNumber(id, user.email);
+      } else {
+        data = await publicDeliveryApi.getDeliveryByTrackingId(id, user.email);
+      }
+
+      setDelivery(data);
+    };
 
     initialize();
-    
+
     if (!socket) return;
-    
+
 
     socket.on('driver_position_update', (data) => {
-      
+
       setDriverLocation({ lat: parseFloat(data.position.lat), lng: parseFloat(data.position.lng) });
     })
 
     setIsConnected(true);
 
-   // return () => { newSocket.close() };
+    // return () => { newSocket.close() };
   }, []);
   useEffect(() => {
     if (delivery && isLoading === false) {

@@ -13,8 +13,9 @@ const publicApi = axios.create({
 
 export const publicDeliveryApi = {
   // Get delivery by ID (public access)
-  getDeliveryById: async (id: string): Promise<Delivery> => {
-    const response = await publicApi.get(`/public/deliveries/${id}`);
+  getDeliveryByTrackingId: async (id: string, logedEmail: string): Promise<Delivery> => {
+    const response = await publicApi.get(`/public/deliveries/tracking/id/${id}/${logedEmail}`);
+    //console.log("data tacking public " , response)
     return response.data.data;
   },
 
