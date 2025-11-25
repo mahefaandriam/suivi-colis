@@ -1,7 +1,7 @@
 import { MapContainer, TileLayer, Marker, useMap, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet-routing-machine";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 // Remove default Leaflet markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -62,8 +62,8 @@ interface DriverTrackingMapProps {
 
 export default function DriverTrackingMap({ driver, customers }: DriverTrackingMapProps) {
   // Memoize center calculation
-  const center = useMemo(() => {
-    return driver ? [driver.lat, driver.lng] : calculateCenter(customers);
+  const center = useMemo<[number, number]>(() => {
+    return driver ? [driver.lat, driver.lng] as [number, number] : calculateCenter(customers);
   }, [driver, customers]);
 
   // Memoize map key to force re-render when center changes significantly
@@ -230,7 +230,7 @@ function RoutingToCustomers({ driver, customers }: RoutingToCustomersProps) {
 
     // Remove old routing controls
     routingControlsRef.current.forEach(control => {
-      if (control && map.hasControl(control)) {
+      if (control && (control as any)._map) {
         map.removeControl(control);
       }
     });
@@ -241,29 +241,29 @@ function RoutingToCustomers({ driver, customers }: RoutingToCustomersProps) {
       const routeColor = customer?.color || getCustomerColor(customer.id, index);
       
       // Create routing control
-      const routingControl = L.Routing.control({
-        waypoints: [
-          L.latLng(driver.lat, driver.lng),
-          L.latLng(customer.lat, customer.lng)
-        ],
-        lineOptions: {
-          styles: [{
-            color: routeColor,
-            weight: 6,
-            opacity: 0.8
-          }],
-          extendToWaypoints: false,
-          missingRouteTolerance: 0
-        },
-        show: false, // Hide the default control panel
-        routeWhileDragging: false,
-        fitSelectedRoutes: false,
-        showAlternatives: false,
-        createMarker: (i: number, waypoint: any, n: number) => {
-          // Return null to prevent default markers
-          return null;
-        }
-      }).addTo(map);
+            const routingControl = L.Routing.control({
+              waypoints: [
+                L.latLng(driver.lat, driver.lng),
+                L.latLng(customer.lat, customer.lng)
+              ],
+              lineOptions: {
+                styles: [{
+                  color: routeColor,
+                  weight: 6,
+                  opacity: 0.8
+                }],
+                extendToWaypoints: false,
+                missingRouteTolerance: 0
+              },
+              show: false, // Hide the default control panel
+              routeWhileDragging: false,
+              fitSelectedRoutes: false,
+              showAlternatives: false,
+              createMarker: (i: number, waypoint: any, n: number) => {
+                // Return null to prevent default markers
+                return null;
+              }
+            } as any).addTo(map);
 
       // Store the control for cleanup
       routingControlsRef.current.push(routingControl);
@@ -328,7 +328,7 @@ function RoutingToCustomers({ driver, customers }: RoutingToCustomersProps) {
     return () => {
       if (map) {
         routingControlsRef.current.forEach(control => {
-          if (control && map.hasControl(control)) {
+          if (control && (control as any)._map) {
             map.removeControl(control);
           }
         });
@@ -373,39 +373,41 @@ function SingleRouteToClosestCustomer({ driver, customers }: RoutingToCustomersP
     if (!map || !closestCustomer) return;
 
     // Remove old routing control
-    if (routingControlRef.current && map.hasControl(routingControlRef.current)) {
+    if (routingControlRef.current && (routingControlRef.current as any)._map) {
       map.removeControl(routingControlRef.current);
     }
 
     // Create routing to closest customer
-    routingControlRef.current = L.Routing.control({
-      waypoints: [
-        L.latLng(driver.lat, driver.lng),
-        L.latLng(closestCustomer.lat, closestCustomer.lng)
-      ],
-      lineOptions: {
-        styles: [{
-          color: '#3b82f6',
-          weight: 6,
-          opacity: 0.8
-        }]
-      },
-      show: true, // Show control panel for single route
-      routeWhileDragging: false,
-      fitSelectedRoutes: true,
-      showAlternatives: false,
-      createMarker: (i: number, waypoint: any, n: number) => {
-        // Return null to use our custom markers
-        return null;
-      }
-    }).addTo(map);
+        routingControlRef.current = L.Routing.control({
+          waypoints: [
+            L.latLng(driver.lat, driver.lng),
+            L.latLng(closestCustomer.lat, closestCustomer.lng)
+          ],
+          lineOptions: {
+            styles: [{
+              color: '#3b82f6',
+              weight: 6,
+              opacity: 0.8
+            }],
+            extendToWaypoints: false,
+            missingRouteTolerance: 0
+          },
+          show: true, // Show control panel for single route
+          routeWhileDragging: false,
+          fitSelectedRoutes: true,
+          showAlternatives: false,
+          createMarker: (i: number, waypoint: any, n: number) => {
+            // Return null to use our custom markers
+            return null;
+          }
+        } as any).addTo(map);
 
   }, [map, driver, closestCustomer]);
 
   // Cleanup
   useEffect(() => {
     return () => {
-      if (map && routingControlRef.current && map.hasControl(routingControlRef.current)) {
+      if (map && routingControlRef.current && (routingControlRef.current as any)._map) {
         map.removeControl(routingControlRef.current);
       }
     };
@@ -426,48 +428,48 @@ function RoutingWithInstructions({ driver, customers }: RoutingToCustomersProps)
     if (!map || customers.length === 0) return;
 
     // Remove old routing control
-    if (routingControlRef.current && map.hasControl(routingControlRef.current)) {
+    if (routingControlRef.current && (routingControlRef.current as any)._map) {
       map.removeControl(routingControlRef.current);
     }
 
     const customer = customers[selectedCustomer];
     
     // Create routing with instructions panel
-    routingControlRef.current = L.Routing.control({
-      waypoints: [
-        L.latLng(driver.lat, driver.lng),
-        L.latLng(customer.lat, customer.lng)
-      ],
-      lineOptions: {
-        styles: [{
-          color: '#3b82f6',
-          weight: 6,
-          opacity: 0.8
-        }]
-      },
-      show: true, // Show the instructions panel
-      routeWhileDragging: false,
-      fitSelectedRoutes: true,
-      showAlternatives: true,
-      altLineOptions: {
-        styles: [{
-          color: '#6b7280',
-          weight: 4,
-          opacity: 0.6
-        }]
-      },
-      createMarker: (i: number, waypoint: any, n: number) => {
-        // Use custom markers for start and end points
-        return null;
-      }
-    }).addTo(map);
+        routingControlRef.current = L.Routing.control({
+          waypoints: [
+            L.latLng(driver.lat, driver.lng),
+            L.latLng(customer.lat, customer.lng)
+          ],
+          lineOptions: {
+            styles: [{
+              color: '#3b82f6',
+              weight: 6,
+              opacity: 0.8
+            }]
+          },
+          show: true, // Show the instructions panel
+          routeWhileDragging: false,
+          fitSelectedRoutes: true,
+          showAlternatives: true,
+          altLineOptions: {
+            styles: [{
+              color: '#6b7280',
+              weight: 4,
+              opacity: 0.6
+            }]
+          },
+          createMarker: (i: number, waypoint: any, n: number) => {
+            // Use custom markers for start and end points
+            return null;
+          }
+        } as any).addTo(map);
 
   }, [map, driver, customers, selectedCustomer]);
 
   // Cleanup
   useEffect(() => {
     return () => {
-      if (map && routingControlRef.current && map.hasControl(routingControlRef.current)) {
+      if (map && routingControlRef.current && (routingControlRef.current as any)._map) {
         map.removeControl(routingControlRef.current);
       }
     };
