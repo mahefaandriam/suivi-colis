@@ -15,6 +15,7 @@ import { Delivery } from '@/types/delivery';
 import { publicDeliveryApi } from '@/services/publicApi';
 
 type CustomerLocation = {
+  id: string | number;
   lat: number;
   lng: number;
   color: string;
@@ -89,14 +90,13 @@ const TrackingPage = () => {
 
    // return () => { newSocket.close() };
   }, []);
-
   useEffect(() => {
     if (delivery && isLoading === false) {
       // setCustomerLocation({lat: parseFloat(delivery.recipient.localisation), lng: parseFloat(delivery.recipient.localisation)});
       const [dLat, dLng] = delivery.recipient.localisation
         .split(",")
         .map((v: string) => parseFloat(v.trim()));
-      setCustomerLocation([{ lat: dLat, lng: dLng, color: customerColor }]);
+      setCustomerLocation([{ id: delivery.trackingNumber, lat: dLat, lng: dLng, color: customerColor }]);
     }
   }, [isLoading, delivery]);
 
