@@ -25,12 +25,14 @@ const TrackingPage = () => {
   const { user } = useAuth();
   //const { data: delivery, isLoading } = usePublicDeliveryByTracking(id!, user.email);
   const [delivery, setDelivery] = useState<Delivery>();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [driverDriver, setDriverDriver] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [driverLocation, setDriverLocation] = useState({ lat: 0, lng: 0 });
   const [customerLocation, setCustomerLocation] = useState<CustomerLocation[]>([]);
   const [customerColor, setCustomerColor] = useState("#717171");
+  const [waitDriverLocation, setWaitDriverLocatino] = useState(true)
+
   //  const socketRef = useRef<Socket | null>(null);
   /*
     useEffect(() => {
@@ -66,18 +68,31 @@ const TrackingPage = () => {
           setDriverLocation({ lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) });
         });*/
 
-    const trackingRegex = /^TRK[0-9]+$/;
+    const trackingRegex = /^TRK\d+$/i;
 
     const initialize = async () => {
-      let data;
+      try {
+        let data;
 
-      if (trackingRegex.test(id)) {
-        data = await publicDeliveryApi.getDeliveryByTrackingNumber(id, user.email);
-      } else {
-        data = await publicDeliveryApi.getDeliveryByTrackingId(id, user.email);
+        if (id.startsWith("TRK")) {
+          console.log("Get public delivery by TRK");
+          data = await publicDeliveryApi.getDeliveryByTrackingNumber(id, user.email);
+        } else {
+          console.log("Get public delivery by ID");
+          data = await publicDeliveryApi.getDeliveryByTrackingId(id, user.email);
+        }
+
+        if (data) {
+          console.log("data : ", data)
+          setDelivery(data);
+        } else {
+          console.error("No data received");
+        }
+      } catch (error) {
+        console.error("Error fetching delivery:", error);
+      } finally {
+        setIsLoading(false)
       }
-
-      setDelivery(data);
     };
 
     initialize();
@@ -86,8 +101,8 @@ const TrackingPage = () => {
 
 
     socket.on('driver_position_update', (data) => {
-
       setDriverLocation({ lat: parseFloat(data.position.lat), lng: parseFloat(data.position.lng) });
+      setWaitDriverLocatino(false);
     })
 
     setIsConnected(true);
@@ -105,7 +120,6 @@ const TrackingPage = () => {
   }, [isLoading, delivery]);
 
   if (isLoading) {
-
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
@@ -169,6 +183,8 @@ const TrackingPage = () => {
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Timeline */}
+
+
           <div className="lg:col-span-2">
             <Card className="shadow-md">
               <CardHeader>
@@ -178,10 +194,20 @@ const TrackingPage = () => {
                 <DeliveryTimeline timeline={delivery.timeline} />
               </CardContent>
             </Card>
-            <Card className="shadow-md">
-              <PublicTrackingMap driver={driverLocation} customers={customerLocation} />
+            <Card className="shadow-md mt-5">
+              {waitDriverLocation ?
+                (
+                  <div className="lg:col-span-2 min-h-50 flex items-center justify-center flex flex-col">
+                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
+                    <span>Livreur en attente...</span>
+                  </div>
+                )
+                : (
+                  <PublicTrackingMap driver={driverLocation} customers={customerLocation} />
+                )}
             </Card>
           </div>
+
 
           {/* Details Sidebar */}
           <div className="space-y-6">

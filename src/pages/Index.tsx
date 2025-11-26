@@ -59,7 +59,7 @@ const Index = () => {
     if (isLoading) return;
 
     if (delivery) {
-      navigate(`/user/tracking/${trackingNumber}`);
+      navigate(`/user/tracking/${trackingNumber}`);// Or by Id
     } else {
       toast({
         title: 'Colis non trouvé',
@@ -153,6 +153,8 @@ const Index = () => {
           </div>
         </div>
 
+        
+
         <div className="container mx-auto max-w-4xl text-center relative z-10">
           <h1 className="mb-4 text-4xl font-bold text-primary-foreground md:text-5xl lg:text-6xl hero-title">
             Trouver votre colis
@@ -226,6 +228,8 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+
 
       {/* Features Section */}
       <section className="py-16 px-4">
