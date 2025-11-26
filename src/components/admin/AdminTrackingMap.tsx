@@ -326,7 +326,7 @@ function RoutingRealtime({ driver, customers, driverIndex }: RoutingRealtimeProp
   const createRoute = useCallback((customer: Customer, routeColor: string) => {
     if (!map) return null;
 
-    const control = L.Routing.control({
+    const control = (L.Routing as any).control({
       waypoints: [
         L.latLng(driver.lat, driver.lng),
         L.latLng(customer.lat, customer.lng)
@@ -345,8 +345,10 @@ function RoutingRealtime({ driver, customers, driverIndex }: RoutingRealtimeProp
       show: false,
       routeWhileDragging: false,
       fitSelectedRoutes: false,
-      //createMarker: () => null,
-      //draggableWaypoints: false,
+      // createMarker is not present in the installed TypeScript definitions for leaflet-routing-machine,
+      // cast L.Routing to any so we can pass this option to suppress default markers.
+      createMarker: () => null,
+      draggableWaypoints: false,
       showAlternatives: false
     }).addTo(map);
 
