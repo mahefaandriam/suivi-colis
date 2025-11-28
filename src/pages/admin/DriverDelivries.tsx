@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { DeliveryStatusBadge } from '@/components/DeliveryStatusBadge';
 import { Download, Package, Plus, Search } from 'lucide-react';
 import { useDeliveries, useUpdateDeliveryStatus } from '@/hooks/useDeliveries';
-import { DeliveryStatus } from '@/types/delivery';
+import { DeliveryDriverLocation, DeliveryStatus } from '@/types/delivery';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { deliveryApi } from '@/services/api';
@@ -32,12 +32,12 @@ const DriverDeliveries = () => {
   const [customersLocation, setCustomersLocation] = useState(null);
   const [isLoading, setIsLoading] = useState(true)
 
-  
+
   const { socket, isConnected } = useSocket();
 
   const [localisationError, setLocalisationError] = useState(null);
   const [driverConnectLoading, setDriverConnectLoading] = useState(true);
-  
+
   const [focusedCustomerIds, setFocusedCustomerIds] = useState<string[]>([]);
 
 
@@ -75,7 +75,12 @@ const DriverDeliveries = () => {
 
       console.log("the deliveries for a driver: ", data)
 
-      setCustomersLocation(data.map(d => {
+      const filtered = data.filter(
+        (d: DeliveryDriverLocation) =>
+          d.status === 'pending' || d.status === 'in_transit'
+      );
+
+      setCustomersLocation(filtered.map(d => {
         const [lat, lng] = d.recipient_localisation
           .split(",")
           .map((v: string) => parseFloat(v.trim()))
@@ -85,19 +90,19 @@ const DriverDeliveries = () => {
       setDriverLocation(prev => [
         ...prev,
         {
-          id:user.id,
-          lat: data[0].lat,
-          lng: data[0].lng,
+          id: user.id,
+          lat: filtered[0].lat,
+          lng: filtered[0].lng,
           name: user.firstName,
-          email: data[0].driver_email
+          email: filtered[0].driver_email
         }
       ])
 
-      setDeliveries(data);
+      setDeliveries(filtered);
 
 
-      
-    if (!socket || !isConnected) return;
+
+      if (!socket || !isConnected) return;
 
 
       socket.on('driver_connected', () => {
@@ -354,7 +359,7 @@ const DriverDeliveries = () => {
                       </thead>
                       <tbody>
                         {deliveries.map((delivery) => (
-                          <tr key={delivery.id} className="border-b hover:bg-muted/50" onClick={() => setFocusedCustomerIds([delivery.tracking_number])}  style={{ backgroundColor: delivery.colis_theme + "20" }}>
+                          <tr key={delivery.id} className="border-b hover:bg-muted/50" onClick={() => setFocusedCustomerIds([delivery.tracking_number])} style={{ backgroundColor: delivery.colis_theme + "20" }}>
                             <td className="px-4 font-medium">{delivery.tracking_number}</td>
                             <td className="px-4">{delivery.recipient_name}</td>
                             <td className="px-4 text-sm text-muted-foreground">{delivery.recipient_address}</td>
@@ -406,7 +411,7 @@ const DriverDeliveries = () => {
           </div>
         ) : (
           <div>
-            <DriverTrackingMap drivers={driverLocation} customers={customersLocation} focusedCustomerIds={focusedCustomerIds}   />
+            <DriverTrackingMap drivers={driverLocation} customers={customersLocation} focusedCustomerIds={focusedCustomerIds} />
           </div>
         )}
 
