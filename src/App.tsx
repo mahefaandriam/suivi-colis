@@ -18,7 +18,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { Register } from "./pages/Register";
 import DriverDeliveries from "./pages/admin/DriverDelivries";
 import UserDashboard from "./pages/admin/UserDashboard";
-import { SocketProvider } from "./contexts/AdminSocketContext";
+import { SocketProvider } from "./contexts/SocketContext";
 import { DriverGestion } from "./pages/admin/DriverGestion";
 
 const queryClient = new QueryClient();
@@ -26,7 +26,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <SocketProvider>
+      <SocketProvider> {/* Move SocketProvider here */}
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <TooltipProvider>
             <Toaster />
@@ -39,29 +39,25 @@ const App = () => (
                 <Route path="/register" element={<Register />} />
                 {/* Protected routes */}
                 <Route path="/admin" element={
-                  <ProtectedRoute  >
+                  <ProtectedRoute>
                     <AdminDashboard />
                   </ProtectedRoute>
                 } />
-                
                 <Route path="/admin/driver" element={
-                  <ProtectedRoute requiredRole={["admin"]} >
+                  <ProtectedRoute requiredRole={["admin"]}>
                     <DriverGestion />
                   </ProtectedRoute>
                 } />
-
                 <Route path="/admin-client" element={
-                  <ProtectedRoute  >
+                  <ProtectedRoute>
                     <UserDashboard />
                   </ProtectedRoute>
                 } />
-
                 <Route path="/user/tracking/:id" element={
                   <ProtectedRoute requiredRole={["user"]}>
                     <TrackingPage />
                   </ProtectedRoute>
                 } />
-
                 <Route path="/admin/deliveries" element={
                   <ProtectedRoute requiredRole={["admin"]}>
                     <AdminDeliveries />

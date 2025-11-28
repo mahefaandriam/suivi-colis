@@ -13,7 +13,8 @@ import { io } from 'socket.io-client';
 import { deliveryApi } from '@/services/api';
 import 'leaflet/dist/leaflet.css';
 import AdminTrackingMap from '@/components/admin/AdminTrackingMap';
-import { useSocket } from '@/contexts/AdminSocketContext';
+import { timeStamp } from 'console';
+import { useSocket } from "@/contexts/SocketContext";
 
 
 
@@ -113,6 +114,42 @@ const AdminDeliveries = () => {
         )
       );
     });
+
+     // Listen for driver position updates
+    socket.on('driver_online', (data) => {
+      const { driverId, timestamp } = data;
+
+      console.log("Driver connected at :  " , driverId, " timestamp : ", timestamp)
+
+      // Update the driver's location in state
+      setDrivers(prevDrivers =>
+        prevDrivers.map(driver =>
+          driver.id === driverId
+            ? { ...driver, isActive: true }
+            : driver
+        )
+      );
+    });
+
+    
+
+     // Listen for driver disconnection
+    socket.on('driver_disconnected', (data) => {
+      const { driverId, timestamp } = data;
+
+      console.log("Driver disconnected :  " , driverId, " at : ", timestamp)
+
+      // Update the driver's location in state
+      setDrivers(prevDrivers =>
+        prevDrivers.map(driver =>
+          driver.id === driverId
+            ? { ...driver, isActive: false }
+            : driver
+        )
+      );
+    });
+
+    
 
     return () => { socket.close() };
   }, []);
@@ -228,6 +265,7 @@ const AdminDeliveries = () => {
       lng: parseFloat(row.lng),
       name: row.sender_name,  // You can change this if you track real driver names
       email: row.driver_email,
+      isActive: row.is_online
     };
 
     const customer = {

@@ -12,9 +12,10 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '@/contexts/AuthContext';
 
+import { useSocket } from "@/contexts/SocketContext";
+
 // Fix for default markers in react-leaflet
 import L from 'leaflet';
-import { useSocket } from '@/contexts/AdminSocketContext';
 
 let DefaultIcon = L.divIcon({
     html: `<div style="background-color: #dc2626; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,

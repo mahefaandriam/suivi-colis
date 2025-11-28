@@ -161,7 +161,7 @@ export default function AdminTrackingMap({
         >
 
           <Popup>
-            <strong>Driver {driver.name || `#${driver.id}`}</strong>
+            <strong>Livreur {driver.name || `#${driver.id}`}</strong>
             <br />
             Position: {driver.lat.toFixed(4)}, {driver.lng.toFixed(4)}
             <br />
@@ -169,7 +169,7 @@ export default function AdminTrackingMap({
             <br />
             Status: {driver.isActive ? 'Active' : 'Inactive'}
             <br />
-            Assigned customers: {customers.filter(c => c.driverId === driver.id).length}
+            Nombre de colis: {customers.filter(c => c.driverId === driver.id).length}
           </Popup>
         </Marker>
       ))}
@@ -191,11 +191,10 @@ export default function AdminTrackingMap({
           }}
         >
           <Popup>
-            <strong>Customer {customer.name || `#${customer.id}`}</strong>
+            <strong>Pour {customer.name || `#${customer.id}`}</strong>
             <br />
             Position: {customer.lat.toFixed(4)}, {customer.lng.toFixed(4)}
             <br />
-            {customer.driverId && `Assigned to Driver: ${customer.driverId}`}
           </Popup>
         </Marker>
       ))}
@@ -377,7 +376,7 @@ function RoutingRealtime({ driver, customers, driverIndex }: RoutingRealtimeProp
                 border: 2px solid white;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.3);
                 white-space: nowrap;
-              ">Customer ${customer.name || customer.id}</div>`,
+              ">Pour ${customer.name || customer.id}</div>`,
               className: 'customer-route-label',
               iconSize: [80, 24],
             })

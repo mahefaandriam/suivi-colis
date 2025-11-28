@@ -7,7 +7,7 @@ import { DeliveryTimeline } from '@/components/DeliveryTimeline';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PublicTrackingMap from '@/components/admin/PublicTrackingMap';
-import { useSocket } from '@/contexts/AdminSocketContext';
+import { useSocket } from "@/contexts/SocketContext";
 import { Delivery } from '@/types/delivery';
 import { publicDeliveryApi } from '@/services/publicApi';
 
