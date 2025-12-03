@@ -35,7 +35,7 @@ export const Login = () => {
 
     try {
       await login({ email, password });
-      navigate(from, { replace: true });
+      navigate('/');
     } catch (error: any) {
       setError(error.response?.data?.message || 'Échec de la connexion');
     } finally {
