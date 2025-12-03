@@ -1,8 +1,10 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, LoginCredentials, RegisterData, UserRole } from '../types/auth';
+import { User, LoginCredentials, RegisterData } from '../types/auth';
 import { authApi, tokenService } from '../services/authService';
 import { toast } from '@/hooks/use-toast';
+
+type UserRole = 'driver' | 'admin' | 'user';
 
 interface AuthContextType {
   user: User | null;
