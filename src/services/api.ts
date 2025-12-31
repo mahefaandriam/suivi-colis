@@ -91,7 +91,7 @@ export const driverApi = {
     console.log("Attempt to get Driver of admin")
     const response = await api.get(`/drivers/admin/${adminId}`);
     console.log("Driver for admin", response);
-    return response.data[0];
+    return response.data;
   },
 
   // Get all deliveries (user-specific)

@@ -37,7 +37,11 @@ export const Login = () => {
       await login({ email, password });
       navigate('/');
     } catch (error: any) {
-      setError(error.response?.data?.message || 'Échec de la connexion');
+      setError(
+        error.response?.data?.message ||
+        error.message ||
+        'Échec de la connexion'
+      );
     } finally {
       setIsLoading(false);
     }

@@ -4,7 +4,6 @@ import { User, LoginCredentials, RegisterData } from '../types/auth';
 import { authApi, tokenService } from '../services/authService';
 import { toast } from '@/hooks/use-toast';
 
-type UserRole = 'driver' | 'admin' | 'user';
 
 interface AuthContextType {
   user: User | null;
@@ -44,7 +43,7 @@ const detectDeviceType = (): 'mobile' | 'desktop' | 'unknown' => {
 };
 
 // Check if device is authorized for the user role
-const isDeviceAuthorizedForRole = (userRole: UserRole, deviceType: 'mobile' | 'desktop' | 'unknown'): boolean => {
+const isDeviceAuthorizedForRole = (userRole, deviceType: 'mobile' | 'desktop' | 'unknown'): boolean => {
   // Drivers can only use mobile devices (specifically Android if needed)
   if (userRole === 'driver') {
     if (deviceType === 'mobile') {
@@ -134,16 +133,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Check device authorization before proceeding
       const userRole = response.user.role;
-      const isAuthorized = isDeviceAuthorizedForRole(userRole, deviceType);
+
+      // A ajouter : en production, vérifier le type d'appareil
+      // const isAuthorized = isDeviceAuthorizedForRole(userRole, deviceType);
       
-      if (!isAuthorized) {
-        tokenService.removeToken();
-        throw new Error(
-          userRole === 'driver' 
-            ? 'Drivers can only log in from Android mobile devices.' 
-            : 'Unauthorized device for this user role.'
-        );
-      }
+      // if (!isAuthorized) {
+      //   tokenService.removeToken();
+      //   throw new Error('En tant que livreur, vous devez vous connecter avec des appareils mobiles ou Android.'        );
+      // }
       
       tokenService.setToken(response.token);
       tokenService.setUser(response.user);
