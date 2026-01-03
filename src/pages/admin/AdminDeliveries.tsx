@@ -321,7 +321,7 @@ const AdminDeliveries = () => {
           {allDeliveries && allDeliveries.length > 0 ? (
             <div>
 
-              <h2>Deliveries for Drivers:</h2>
+              <h2>Les envois en cours :</h2>
 
               <Card>
                 <CardContent className="p-0">

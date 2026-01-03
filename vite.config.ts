@@ -8,7 +8,7 @@ export default defineConfig(({  }) => ({
     port: 3001,
     proxy: {
       '/api': {
-        target: 'https://delivery-tracker.up.railway.app',
+        target: 'https://delivery-tracker-backend-vvws.onrender.com',
         changeOrigin: true
       }
     }
